@@ -314,4 +314,91 @@ router.get('/problem-content', catchAsync(async (req, res, next) => {
   });
 }));
 
+// @desc    Save footer content
+// @route   POST /api/settings/footer
+// @access  Private (admin only)
+router.post('/footer', protect, authorize('admin'), [
+  body('facebook_url').optional({ checkFalsy: true }).isString().trim(),
+  body('twitter_url').optional({ checkFalsy: true }).isString().trim(),
+  body('github_url').optional({ checkFalsy: true }).isString().trim(),
+  body('contact_email').optional({ checkFalsy: true }).isEmail().withMessage('Invalid contact email'),
+  body('locations').optional({ checkFalsy: true }).isString().trim(),
+  body('quick_links').optional().isArray(),
+  body('programs').optional().isArray(),
+  body('copyright_text').optional({ checkFalsy: true }).isString().trim(),
+], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array()
+    });
+  }
+
+  const content = req.body;
+  const pool = getPool();
+
+  await pool.execute(
+    `INSERT INTO settings (setting_key, setting_value, updated_by, updated_at)
+     VALUES (?, ?, ?, NOW())
+     ON DUPLICATE KEY UPDATE
+     setting_value = VALUES(setting_value),
+     updated_by = VALUES(updated_by),
+     updated_at = NOW()`,
+    ['footer_content', JSON.stringify(content), req.user.id]
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Footer content saved successfully'
+  });
+}));
+
+// @desc    Get footer content
+// @route   GET /api/settings/footer
+// @access  Public
+router.get('/footer', catchAsync(async (req, res, next) => {
+  const pool = getPool();
+
+  const [settings] = await pool.execute(
+    'SELECT setting_value FROM settings WHERE setting_key = ?',
+    ['footer_content']
+  );
+
+  let footerContent = {
+    facebook_url: "https://facebook.com",
+    twitter_url: "https://twitter.com",
+    github_url: "https://github.com",
+    contact_email: "info@waterwise.org",
+    locations: "Kigali, Rwanda | Bujumbura, Burundi | Dar es Salaam, Tanzania",
+    quick_links: [
+      { label: "Home", href: "#" },
+      { label: "Challenges", href: "#problem" },
+      { label: "Our Solution", href: "#solutions" },
+      { label: "Specialist Hub", href: "#chat" }
+    ],
+    programs: [
+      "Water Heroes Certificate",
+      "3D Animation Classes",
+      "Rural Outreach",
+      "Tree Planting"
+    ],
+    copyright_text: "WATER-WISE PROJECT. SUSTAINING LIFE."
+  };
+
+  if (settings.length > 0) {
+    try {
+      footerContent = { ...footerContent, ...JSON.parse(settings[0].setting_value) };
+    } catch (error) {
+      console.error('Error parsing footer content:', error);
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    data: footerContent
+  });
+}));
+
 module.exports = router;

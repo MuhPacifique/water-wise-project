@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TranslatableText } from '../components/Home';
+import { TranslatableText, useContent } from '../components/Home';
 import { useAuth } from '../contexts/AuthContext';
 import { Droplets, AlertTriangle, LogIn, LogOut } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { site_name } = useContent();
   const [error, setError] = useState<string | null>(null);
 
   const logoVariants = {
@@ -56,10 +57,10 @@ const Navbar = () => {
               <Droplets size={24} />
             </motion.div>
             <motion.span
-              className="text-xl font-black tracking-tighter bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent hidden sm:block"
+              className="text-xl font-black tracking-tighter bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent hidden sm:block uppercase"
               whileHover={{ scale: 1.02 }}
             >
-              WATER-WISE
+              {site_name}
             </motion.span>
           </motion.div>
 

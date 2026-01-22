@@ -1,14 +1,37 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Facebook, Twitter, Github, Mail, Droplets, MapPin, ChevronRight } from 'lucide-react';
 import { SOCIAL_LINKS } from '../constants';
+import { FooterContent } from '../types';
 
 interface FooterProps {
   TranslatableText: React.FC<{ text: string }>;
+  content?: FooterContent | null;
 }
 
-const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
+const Footer: React.FC<FooterProps> = ({ TranslatableText, content }) => {
+  // Use content from props or fallback to constants
+  const facebook = content?.facebook_url || SOCIAL_LINKS.facebook;
+  const twitter = content?.twitter_url || "#";
+  const github = content?.github_url || SOCIAL_LINKS.github;
+  const email = content?.contact_email || SOCIAL_LINKS.email;
+  const locations = content?.locations || "Kigali, Rwanda | Bujumbura, Burundi | Dar es Salaam, Tanzania";
+  const copyright = content?.copyright_text || "WATER-WISE PROJECT. SUSTAINING LIFE.";
+  const programs = content?.programs || [
+    "Water Heroes Certificate",
+    "3D Animation Classes",
+    "Rural Outreach",
+    "Tree Planting"
+  ];
+  const quickLinks = content?.quick_links || [
+    { label: "Home", href: "#" },
+    { label: "Challenges", href: "#problem" },
+    { label: "Our Solution", href: "#solutions" },
+    { label: "Specialist Hub", href: "#chat" }
+  ];
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -80,11 +103,11 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
             </p>
             <div className="flex gap-4">
               <motion.a
-                href={SOCIAL_LINKS.facebook}
+                href={facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-lg border border-white/5"
-                title="Facebook: trixy aimable"
+                title="Facebook"
                 variants={socialIconVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -92,11 +115,11 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
                 <Facebook size={20} />
               </motion.a>
               <motion.a
-                href={SOCIAL_LINKS.github}
+                href={github}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-slate-700 hover:text-white transition-all shadow-lg border border-white/5"
-                title="Github: aimablehakizimana"
+                title="Github"
                 variants={socialIconVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -104,8 +127,11 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
                 <Github size={20} />
               </motion.a>
               <motion.a
-                href="#"
+                href={twitter}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-blue-400 hover:text-white transition-all shadow-lg border border-white/5"
+                title="Twitter"
                 variants={socialIconVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -127,50 +153,19 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
               ></motion.div>
             </h4>
             <ul className="space-y-4 text-sm font-bold">
-              <motion.li variants={itemVariants}>
-                <motion.a
-                  href="#"
-                  className="hover:text-blue-400 flex items-center gap-2 transition-all"
-                  variants={linkVariants}
-                  whileHover="hover"
-                >
-                  <ChevronRight size={14} />
-                  <TranslatableText text="Home" />
-                </motion.a>
-              </motion.li>
-              <motion.li variants={itemVariants}>
-                <motion.a
-                  href="#problem"
-                  className="hover:text-blue-400 flex items-center gap-2 transition-all"
-                  variants={linkVariants}
-                  whileHover="hover"
-                >
-                  <ChevronRight size={14} />
-                  <TranslatableText text="Challenges" />
-                </motion.a>
-              </motion.li>
-              <motion.li variants={itemVariants}>
-                <motion.a
-                  href="#solutions"
-                  className="hover:text-blue-400 flex items-center gap-2 transition-all"
-                  variants={linkVariants}
-                  whileHover="hover"
-                >
-                  <ChevronRight size={14} />
-                  <TranslatableText text="Our Solution" />
-                </motion.a>
-              </motion.li>
-              <motion.li variants={itemVariants}>
-                <motion.a
-                  href="#chat"
-                  className="hover:text-blue-400 flex items-center gap-2 transition-all"
-                  variants={linkVariants}
-                  whileHover="hover"
-                >
-                  <ChevronRight size={14} />
-                  <TranslatableText text="Specialist Hub" />
-                </motion.a>
-              </motion.li>
+              {quickLinks.map((link, index) => (
+                <motion.li key={index} variants={itemVariants}>
+                  <motion.a
+                    href={link.href}
+                    className="hover:text-blue-400 flex items-center gap-2 transition-all"
+                    variants={linkVariants}
+                    whileHover="hover"
+                  >
+                    <ChevronRight size={14} />
+                    <TranslatableText text={link.label} />
+                  </motion.a>
+                </motion.li>
+              ))}
             </ul>
           </motion.div>
 
@@ -186,10 +181,11 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
               ></motion.div>
             </h4>
             <ul className="space-y-4 text-sm font-bold">
-              <motion.li variants={itemVariants}><TranslatableText text="Water Heroes Certificate" /></motion.li>
-              <motion.li variants={itemVariants}><TranslatableText text="3D Animation Classes" /></motion.li>
-              <motion.li variants={itemVariants}><TranslatableText text="Rural Outreach" /></motion.li>
-              <motion.li variants={itemVariants}><TranslatableText text="Tree Planting" /></motion.li>
+              {programs.map((program, index) => (
+                <motion.li key={index} variants={itemVariants}>
+                  <TranslatableText text={program} />
+                </motion.li>
+              ))}
             </ul>
           </motion.div>
 
@@ -207,12 +203,12 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
             <div className="space-y-6">
               <motion.div className="flex items-start gap-4" variants={itemVariants}>
                 <Mail className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                <p className="text-sm font-bold">{SOCIAL_LINKS.email}</p>
+                <p className="text-sm font-bold">{email}</p>
               </motion.div>
               <motion.div className="flex items-start gap-4" variants={itemVariants}>
                 <MapPin className="w-5 h-5 text-blue-500 flex-shrink-0" />
                 <p className="text-sm opacity-70 italic font-medium leading-relaxed">
-                  <TranslatableText text="Kigali, Rwanda | Bujumbura, Burundi | Dar es Salaam, Tanzania" />
+                  <TranslatableText text={locations} />
                 </p>
               </motion.div>
             </div>
@@ -227,7 +223,7 @@ const Footer: React.FC<FooterProps> = ({ TranslatableText }) => {
           viewport={{ once: true }}
         >
           <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30">
-            © {new Date().getFullYear()} WATER-WISE PROJECT. <TranslatableText text="SUSTAINING LIFE." />
+            © {new Date().getFullYear()} <TranslatableText text={copyright} />
           </p>
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest opacity-40">
             <TranslatableText text="Privacy" />

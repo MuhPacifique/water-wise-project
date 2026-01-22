@@ -8,10 +8,11 @@ interface ProblemSectionProps {
   points: string[];
   title: string;
   subtitle: string;
+  description: string;
   imageUrl: string;
 }
 
-const ProblemSection: React.FC<ProblemSectionProps> = ({ TranslatableText, points, title, subtitle, imageUrl }) => {
+const ProblemSection: React.FC<ProblemSectionProps> = ({ TranslatableText, points, title, subtitle, description, imageUrl }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -100,13 +101,13 @@ const ProblemSection: React.FC<ProblemSectionProps> = ({ TranslatableText, point
               className="text-3xl font-bold text-slate-900 mb-6"
               variants={itemVariants}
             >
-              <TranslatableText text="Problem Statement" />
+              <TranslatableText text={title} />
             </motion.h2>
             <motion.p
               className="text-slate-600 mb-8 text-lg"
               variants={itemVariants}
             >
-              <TranslatableText text="All over the world, the issue of climate change is a subject under discussion. Most countries face its effects, especially in Africa, due to specific challenges:" />
+              <TranslatableText text={description} />
             </motion.p>
             <motion.ul
               className="space-y-4"

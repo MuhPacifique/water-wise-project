@@ -6,7 +6,7 @@ async function check() {
   try {
     await initializeDatabase();
     const pool = getPool();
-    const [rows] = await pool.execute('SELECT id, title FROM water_campaigns');
+    const [rows] = await pool.execute('SELECT * FROM water_campaigns');
     console.log('Campaigns:', rows);
   } catch (err) {
     console.error('Error:', err);

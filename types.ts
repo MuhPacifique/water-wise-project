@@ -42,3 +42,14 @@ export interface ProblemContent {
   points: string[];
   image_url: string;
 }
+
+export interface FooterContent {
+  facebook_url: string;
+  twitter_url: string;
+  github_url: string;
+  contact_email: string;
+  locations: string;
+  quick_links: { label: string; href: string }[];
+  programs: string[];
+  copyright_text: string;
+}

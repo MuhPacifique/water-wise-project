@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Video, CheckCircle, FolderOpen, RefreshCw, X } from 'lucide-react';
+import { FileText, Video, CheckCircle, FolderOpen, RefreshCw, X, Play } from 'lucide-react';
 import { googleTranslateService } from '../services/gemini';
 import { Language } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import VideoModal from './VideoModal';
 
 interface ResourceHubProps {
   TranslatableText: React.FC<{ text: string }>;
@@ -13,12 +13,25 @@ interface ResourceHubProps {
 const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [uploads, setUploads] = useState<{id: number, name: string, type: 'doc' | 'video', url?: string, translatedName?: string}[]>([]);
+  const [uploads, setUploads] = useState<{id: number, name: string, type: 'doc' | 'video', url?: string, translatedName?: string, description?: string, thumbnail_url?: string}[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResources, setTotalResources] = useState(0);
   const limit = 12;
+
+  // Video Modal State
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openVideo = (video: any) => {
+    setSelectedVideo(video);
+    setIsModalOpen(true);
+  };
+
+  const closeVideo = () => {
+    setIsModalOpen(false);
+  };
 
   // Fetch resources from API
   useEffect(() => {
@@ -46,7 +59,9 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
           name: resource.translated_title || resource.title,
           type: resource.type === 'document' ? 'doc' : resource.type === 'video' ? 'video' : 'doc',
           url: resource.file_url,
-          translatedName: resource.translated_title || resource.title
+          translatedName: resource.translated_title || resource.title,
+          description: resource.translated_description || resource.description,
+          thumbnail_url: resource.thumbnail_url
         }));
 
         setUploads(resources);
@@ -255,6 +270,7 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
                       custom={i}
                       whileHover="hover"
                       whileTap={{ scale: 0.98 }}
+                      onClick={() => file.type === 'video' ? openVideo(file) : null}
                     >
                       <div className="p-6">
                         <motion.div
@@ -270,16 +286,33 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
                             <TranslatableText text="Database Resource" />
                           </p>
                         </div>
-                        {file.url && (
-                          <motion.a
-                            href={`/api/resources/${file.id}/download`}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <TranslatableText text="Download" />
-                          </motion.a>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {file.type === 'video' && (
+                            <motion.button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openVideo(file);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <Play size={12} fill="currentColor" />
+                              <TranslatableText text="Watch" />
+                            </motion.button>
+                          )}
+                          {file.url && (
+                            <motion.a
+                              href={`/api/resources/${file.id}/download`}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`inline-flex items-center px-4 py-2 ${file.type === 'video' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-blue-600 text-white hover:bg-blue-700'} text-xs font-bold rounded-lg transition-colors`}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <TranslatableText text="Download" />
+                            </motion.a>
+                          )}
+                        </div>
                         <motion.div
                           className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity mt-2"
                           whileHover={{ rotate: 360 }}
@@ -330,6 +363,18 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
           )}
         </motion.div>
       </div>
+
+      {/* Video Modal */}
+      {selectedVideo && (
+        <VideoModal
+          isOpen={isModalOpen}
+          onClose={closeVideo}
+          videoSrc={`/api/resources/${selectedVideo.id}/view`}
+          title={selectedVideo.name}
+          description={selectedVideo.description}
+          poster={selectedVideo.thumbnail_url}
+        />
+      )}
     </motion.section>
   );
 };

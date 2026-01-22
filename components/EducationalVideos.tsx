@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { googleTranslateService } from '../services/gemini';
 import { Language } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import VideoModal from './VideoModal';
 
 // Simple TranslatableText component for EducationalVideos
 const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
@@ -17,6 +18,19 @@ const EducationalVideos: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [videos, setVideos] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // Video Modal State
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openVideo = (video: any) => {
+    setSelectedVideo(video);
+    setIsModalOpen(true);
+  };
+
+  const closeVideo = () => {
+    setIsModalOpen(false);
+  };
 
   // Fetch videos from API
   useEffect(() => {
@@ -208,13 +222,14 @@ const EducationalVideos: React.FC = () => {
               videos.map((video, i) => (
                 <motion.div
                   key={video.id}
-                  className="bg-white rounded-[1.5rem] shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden group"
+                  className="bg-white rounded-[1.5rem] shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden group cursor-pointer"
                   variants={videoCardVariants}
                   custom={i}
                   whileHover="hover"
+                  onClick={() => openVideo(video)}
                 >
                   <div className="aspect-video bg-slate-200 relative overflow-hidden">
-                    <a href={`/api/resources/${video.id}/view`} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                    <div className="block w-full h-full">
                       {video.thumbnail_url ? (
                         <motion.img
                           src={video.thumbnail_url}
@@ -232,7 +247,7 @@ const EducationalVideos: React.FC = () => {
                           <Play className="text-slate-400" size={48} />
                         </motion.div>
                       )}
-                    </a>
+                    </div>
                     
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
                       {video.is_featured ? (
@@ -250,21 +265,19 @@ const EducationalVideos: React.FC = () => {
                       {video.duration || '2:20'}
                     </div>
                     
-                    <a href={`/api/resources/${video.id}/view`} target="_blank" rel="noopener noreferrer">
+                    <motion.div
+                      className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 flex items-center justify-center"
+                      initial={{ opacity: 0 }}
+                      whileHover={{ opacity: 1 }}
+                    >
                       <motion.div
-                        className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 flex items-center justify-center"
-                        initial={{ opacity: 0 }}
-                        whileHover={{ opacity: 1 }}
+                        className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <motion.div
-                          className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <Play className="text-white ml-0.5" size={20} />
-                        </motion.div>
+                        <Play className="text-white ml-0.5" size={20} />
                       </motion.div>
-                    </a>
+                    </motion.div>
                   </div>
 
                   <div className="p-5">
@@ -274,17 +287,18 @@ const EducationalVideos: React.FC = () => {
                     
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2">
-                        <motion.a
-                          href={`/api/resources/${video.id}/view`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <motion.button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openVideo(video);
+                          }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
                           <Play size={12} fill="currentColor" />
                           <TranslatableText text="Watch Now" />
-                        </motion.a>
+                        </motion.button>
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-slate-500">
                         <div className="flex items-center gap-1">
@@ -294,6 +308,7 @@ const EducationalVideos: React.FC = () => {
                         {video.file_url && (
                           <motion.a
                             href={`/api/resources/${video.id}/download`}
+                            onClick={(e) => e.stopPropagation()}
                             className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -311,6 +326,18 @@ const EducationalVideos: React.FC = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Video Modal */}
+      {selectedVideo && (
+        <VideoModal
+          isOpen={isModalOpen}
+          onClose={closeVideo}
+          videoSrc={`/api/resources/${selectedVideo.id}/view`}
+          title={selectedVideo.translated_title || selectedVideo.title}
+          description={selectedVideo.translated_description || selectedVideo.description}
+          poster={selectedVideo.thumbnail_url}
+        />
+      )}
     </motion.div>
   );
 };

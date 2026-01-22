@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Video, Play, Eye, Home, Star, BookOpen, Layers, Globe, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import VideoModal from './VideoModal';
 
 // Simple TranslatableText component
 const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
@@ -15,6 +16,19 @@ const InteractiveTutorials: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [tutorials, setTutorials] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Video Modal State
+  const [selectedTutorial, setSelectedTutorial] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openTutorial = (tutorial: any) => {
+    setSelectedTutorial(tutorial);
+    setIsModalOpen(true);
+  };
+
+  const closeTutorial = () => {
+    setIsModalOpen(false);
+  };
 
   // Fetch tutorials from API
   useEffect(() => {
@@ -184,14 +198,15 @@ const InteractiveTutorials: React.FC = () => {
               tutorials.map((tutorial, i) => (
                 <motion.div
                   key={tutorial.id}
-                  className="bg-white rounded-[1.5rem] shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden group"
+                  className="bg-white rounded-[1.5rem] shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden group cursor-pointer"
                   variants={cardVariants}
                   custom={i}
                   whileHover="hover"
+                  onClick={() => openTutorial(tutorial)}
                 >
                   <div className="aspect-video bg-slate-200 relative overflow-hidden">
                     {tutorial.video_url && (
-                      <a href={tutorial.video_url} target="_blank" rel="noopener noreferrer">
+                      <div className="block w-full h-full">
                         {tutorial.thumbnail_url ? (
                           <img
                             src={tutorial.thumbnail_url}
@@ -208,7 +223,7 @@ const InteractiveTutorials: React.FC = () => {
                             <Play className="text-white ml-1" size={24} />
                           </div>
                         </div>
-                      </a>
+                      </div>
                     )}
                     
                     <div className="absolute top-3 right-3 flex flex-col gap-2">
@@ -245,15 +260,16 @@ const InteractiveTutorials: React.FC = () => {
                     </p>
                     
                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                      <a
-                        href={tutorial.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openTutorial(tutorial);
+                        }}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100"
                       >
                         <Play size={12} fill="currentColor" />
                         <TranslatableText text="Start Tutorial" />
-                      </a>
+                      </button>
                       <div className="flex items-center gap-1 text-xs font-bold text-slate-400">
                         <Calendar size={12} />
                         {new Date(tutorial.created_at).toLocaleDateString()}
@@ -266,6 +282,18 @@ const InteractiveTutorials: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Video Modal */}
+      {selectedTutorial && (
+        <VideoModal
+          isOpen={isModalOpen}
+          onClose={closeTutorial}
+          videoSrc={selectedTutorial.video_url}
+          title={selectedTutorial.title}
+          description={selectedTutorial.description}
+          poster={selectedTutorial.thumbnail_url}
+        />
+      )}
     </motion.div>
   );
 };

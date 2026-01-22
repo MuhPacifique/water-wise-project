@@ -1130,6 +1130,7 @@ const AdminPage: React.FC = () => {
       formData.append('date', newCampaign.date);
       formData.append('participants', newCampaign.participants.toString());
       formData.append('status', newCampaign.status);
+      formData.append('campaign_type', newCampaign.campaign_type);
       
       if (newCampaign.image_url) formData.append('image_url', newCampaign.image_url);
       if (newCampaign.image) formData.append('image', newCampaign.image);
@@ -1149,6 +1150,7 @@ const AdminPage: React.FC = () => {
           date: '',
           participants: 0,
           status: 'Planned',
+          campaign_type: 'Awareness',
           image_url: '',
           image: null,
           is_active: true
@@ -1178,6 +1180,7 @@ const AdminPage: React.FC = () => {
       formData.append('date', editingCampaign.date || '');
       formData.append('participants', (editingCampaign.participants || 0).toString());
       formData.append('status', editingCampaign.status);
+      formData.append('campaign_type', editingCampaign.campaign_type);
       formData.append('is_active', editingCampaign.is_active.toString());
       
       if (editingCampaign.image_url) formData.append('image_url', editingCampaign.image_url);
@@ -3287,7 +3290,7 @@ const AdminPage: React.FC = () => {
                       <input
                         type="number"
                         value={newTutorial.duration}
-                        onChange={(e) => setNewTutorial({ ...newTutorial, duration: parseInt(e.target.value) })}
+                        onChange={(e) => setNewTutorial({ ...newTutorial, duration: parseInt(e.target.value) || 0 })}
                         className="w-full px-3 py-2 border border-slate-300 rounded-md"
                       />
                     </div>
@@ -3832,7 +3835,7 @@ const AdminPage: React.FC = () => {
                       <input
                         type="number"
                         value={newCampaign.participants}
-                        onChange={(e) => setNewCampaign({ ...newCampaign, participants: parseInt(e.target.value) })}
+                        onChange={(e) => setNewCampaign({ ...newCampaign, participants: parseInt(e.target.value) || 0 })}
                         className="w-full px-3 py-2 border border-slate-300 rounded-md"
                       />
                     </div>
@@ -3942,7 +3945,7 @@ const AdminPage: React.FC = () => {
                       <input
                         type="number"
                         value={editingCampaign.participants}
-                        onChange={(e) => setEditingCampaign({ ...editingCampaign, participants: parseInt(e.target.value) })}
+                        onChange={(e) => setEditingCampaign({ ...editingCampaign, participants: parseInt(e.target.value) || 0 })}
                         className="w-full px-3 py-2 border border-slate-300 rounded-md"
                       />
                     </div>

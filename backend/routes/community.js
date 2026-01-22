@@ -123,7 +123,9 @@ router.put('/testimonies/:id', protect, authorize('admin'), [
   fields.forEach(field => {
     if (req.body[field] !== undefined) {
       updates.push(`${field} = ?`);
-      values.push(req.body[field]);
+      // If the field is an empty string, set it to null in the database
+      const value = (typeof req.body[field] === 'string' && req.body[field].trim() === '') ? null : req.body[field];
+      values.push(value);
     }
   });
 
@@ -230,7 +232,7 @@ router.post('/campaigns', protect, authorize('admin'), upload.single('image'), [
     });
   }
 
-  let { title, location, date, participants = 0, status = 'Planned', campaign_type = 'Awareness', image_url } = req.body;
+  let { title, location = null, date = null, participants = 0, status = 'Planned', campaign_type = 'Awareness', image_url = null } = req.body;
   const pool = getPool();
 
   if (req.file) {
@@ -286,7 +288,9 @@ router.put('/campaigns/:id', protect, authorize('admin'), upload.single('image')
   fields.forEach(field => {
     if (req.body[field] !== undefined) {
       updates.push(`${field} = ?`);
-      values.push(req.body[field]);
+      // If the field is an empty string, set it to null in the database
+      const value = (typeof req.body[field] === 'string' && req.body[field].trim() === '') ? null : req.body[field];
+      values.push(value);
     }
   });
 

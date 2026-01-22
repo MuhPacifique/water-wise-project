@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext, Component, React
 import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Language, TranslationContextType, ProblemContent } from '../types';
+import { Language, TranslationContextType, ProblemContent, TeamMember, FooterContent } from '../types';
 import { googleTranslateService } from '../services/gemini';
 import { LANGUAGES, TEAM, ACTIVITIES, SOLUTIONS_ITEMS, PROBLEM_POINTS } from '../constants';
 import Navbar from './Navbar';
@@ -203,6 +203,7 @@ const Home: React.FC = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(TEAM);
   const [siteContent, setSiteContent] = useState<SiteContent>({
     hero_title: "Protecting water resources",
     site_name: "Water-Wise Project",
@@ -216,6 +217,7 @@ const Home: React.FC = () => {
     points: PROBLEM_POINTS,
     image_url: "https://picsum.photos/seed/water-problem/800/600"
   });
+  const [footerContent, setFooterContent] = useState<FooterContent | null>(null);
   const [visibilitySettings, setVisibilitySettings] = useState<FrontendVisibility>({
     showHero: true,
     showProblem: true,
@@ -235,17 +237,21 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const [maintenanceResponse, visibilityResponse, contentResponse, problemResponse] = await Promise.all([
+        const [maintenanceResponse, visibilityResponse, contentResponse, problemResponse, teamResponse, footerResponse] = await Promise.all([
           fetch('/api/settings/maintenance'),
           fetch('/api/settings/frontend-visibility'),
           fetch('/api/settings/content'),
-          fetch('/api/settings/problem-content')
+          fetch('/api/settings/problem-content'),
+          fetch('/api/team/public'),
+          fetch('/api/settings/footer')
         ]);
 
         const maintenanceData = await maintenanceResponse.json();
         const visibilityData = await visibilityResponse.json();
         const contentData = await contentResponse.json();
         const problemData = await problemResponse.json();
+        const teamData = await teamResponse.json();
+        const footerData = await footerResponse.json();
 
         setMaintenanceMode(maintenanceData.maintenanceMode || false);
         setVisibilitySettings(visibilityData.data || visibilitySettings);
@@ -254,6 +260,17 @@ const Home: React.FC = () => {
         }
         if (problemData.success && problemData.data) {
           setProblemContent(problemData.data);
+        }
+        if (footerData.success && footerData.data) {
+          setFooterContent(footerData.data);
+        }
+        if (teamData.success && teamData.data && teamData.data.length > 0) {
+          // Map backend image_url to frontend image property
+          const mappedTeam = teamData.data.map((member: any) => ({
+            ...member,
+            image: member.image_url
+          }));
+          setTeamMembers(mappedTeam);
         }
       } catch (error) {
         console.error('Error fetching settings:', error);
@@ -334,6 +351,7 @@ const Home: React.FC = () => {
                     points={problemContent.points}
                     title={problemContent.title}
                     subtitle={problemContent.subtitle}
+                    description={problemContent.description}
                     imageUrl={problemContent.image_url}
                   />
                 </motion.section>
@@ -393,12 +411,12 @@ const Home: React.FC = () => {
                   transition={{ duration: 0.6, delay: 0.1 }}
                   viewport={{ once: true, margin: "-50px" }}
                 >
-                  <TeamSection TranslatableText={TranslatableText} team={TEAM} />
+                  <TeamSection TranslatableText={TranslatableText} team={teamMembers} />
                 </motion.section>
               )}
             </main>
 
-            {visibilitySettings.showFooter && <Footer TranslatableText={TranslatableText} />}
+            {visibilitySettings.showFooter && <Footer TranslatableText={TranslatableText} content={footerContent} />}
 
             {/* Global Loading Spinner for Translations */}
             {isTranslating && (

@@ -12,7 +12,7 @@ import {
   Sun,
   Plus
 } from 'lucide-react';
-import { ProblemContent } from '../types';
+import { ProblemContent, FooterContent } from '../types';
 
 interface FrontendSettings {
   showHero: boolean;
@@ -62,9 +62,20 @@ const FrontendControls: React.FC = () => {
     points: [],
     image_url: '',
   });
+  const [footerContent, setFooterContent] = useState<FooterContent>({
+    facebook_url: '',
+    twitter_url: '',
+    github_url: '',
+    contact_email: '',
+    locations: '',
+    quick_links: [],
+    programs: [],
+    copyright_text: '',
+  });
   const [saved, setSaved] = useState(false);
   const [contentSaved, setContentSaved] = useState(false);
   const [problemContentSaved, setProblemContentSaved] = useState(false);
+  const [footerSaved, setFooterSaved] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -72,7 +83,7 @@ const FrontendControls: React.FC = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const [settingsRes, contentRes, problemContentRes] = await Promise.all([
+        const [settingsRes, contentRes, problemContentRes, footerRes] = await Promise.all([
           fetch('/api/settings/frontend', {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -80,6 +91,9 @@ const FrontendControls: React.FC = () => {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch('/api/settings/problem-content', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/settings/footer', {
             headers: { Authorization: `Bearer ${token}` },
           })
         ]);
@@ -97,6 +111,11 @@ const FrontendControls: React.FC = () => {
         if (problemContentRes.ok) {
           const data = await problemContentRes.json();
           setProblemContent(data.data);
+        }
+
+        if (footerRes.ok) {
+          const data = await footerRes.json();
+          setFooterContent(data.data);
         }
       } catch (err) {
         console.error('Error fetching settings:', err);
@@ -201,6 +220,31 @@ const FrontendControls: React.FC = () => {
     }
   };
 
+  const handleFooterSave = async () => {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/settings/footer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(footerContent),
+      });
+
+      if (response.ok) {
+        setFooterSaved(true);
+        setTimeout(() => setFooterSaved(false), 3000);
+      } else {
+        setError('Failed to save footer content');
+      }
+    } catch (err) {
+      setError('Error saving footer content');
+      console.error('Save error:', err);
+    }
+  };
+
   const addPoint = () => {
     setProblemContent(prev => ({
       ...prev,
@@ -219,6 +263,48 @@ const FrontendControls: React.FC = () => {
     setProblemContent(prev => ({
       ...prev,
       points: prev.points.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addProgram = () => {
+    setFooterContent(prev => ({
+      ...prev,
+      programs: [...prev.programs, '']
+    }));
+  };
+
+  const updateProgram = (index: number, value: string) => {
+    setFooterContent(prev => ({
+      ...prev,
+      programs: prev.programs.map((p, i) => i === index ? value : p)
+    }));
+  };
+
+  const removeProgram = (index: number) => {
+    setFooterContent(prev => ({
+      ...prev,
+      programs: prev.programs.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addQuickLink = () => {
+    setFooterContent(prev => ({
+      ...prev,
+      quick_links: [...prev.quick_links, { label: '', href: '' }]
+    }));
+  };
+
+  const updateQuickLink = (index: number, field: 'label' | 'href', value: string) => {
+    setFooterContent(prev => ({
+      ...prev,
+      quick_links: prev.quick_links.map((link, i) => i === index ? { ...link, [field]: value } : link)
+    }));
+  };
+
+  const removeQuickLink = (index: number) => {
+    setFooterContent(prev => ({
+      ...prev,
+      quick_links: prev.quick_links.filter((_, i) => i !== index)
     }));
   };
 
@@ -394,6 +480,177 @@ const FrontendControls: React.FC = () => {
             </button>
             {problemContentSaved && (
               <span className="text-green-600 font-medium">✓ Problem content saved!</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Content Management */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
+          <Settings size={20} />
+          Footer Content Management
+        </h3>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Facebook URL
+              </label>
+              <input
+                type="text"
+                value={footerContent.facebook_url}
+                onChange={(e) => setFooterContent({ ...footerContent, facebook_url: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="https://facebook.com/..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Twitter URL
+              </label>
+              <input
+                type="text"
+                value={footerContent.twitter_url}
+                onChange={(e) => setFooterContent({ ...footerContent, twitter_url: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="https://twitter.com/..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Github URL
+              </label>
+              <input
+                type="text"
+                value={footerContent.github_url}
+                onChange={(e) => setFooterContent({ ...footerContent, github_url: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="https://github.com/..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                value={footerContent.contact_email}
+                onChange={(e) => setFooterContent({ ...footerContent, contact_email: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="info@waterwise.org"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Locations (pipe separated)
+            </label>
+            <input
+              type="text"
+              value={footerContent.locations}
+              onChange={(e) => setFooterContent({ ...footerContent, locations: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+              placeholder="Kigali, Rwanda | Bujumbura, Burundi | Dar es Salaam, Tanzania"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Copyright Text
+            </label>
+            <input
+              type="text"
+              value={footerContent.copyright_text}
+              onChange={(e) => setFooterContent({ ...footerContent, copyright_text: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+              placeholder="WATER-WISE PROJECT. SUSTAINING LIFE."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Programs
+            </label>
+            <div className="space-y-2">
+              {footerContent.programs.map((program, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={program}
+                    onChange={(e) => updateProgram(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                    placeholder={`Program ${index + 1}`}
+                  />
+                  <button
+                    onClick={() => removeProgram(index)}
+                    className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={addProgram}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add Program
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Quick Links
+            </label>
+            <div className="space-y-2">
+              {footerContent.quick_links.map((link, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={link.label}
+                    onChange={(e) => updateQuickLink(index, 'label', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                    placeholder="Label"
+                  />
+                  <input
+                    type="text"
+                    value={link.href}
+                    onChange={(e) => updateQuickLink(index, 'href', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                    placeholder="Href (e.g. #problem)"
+                  />
+                  <button
+                    onClick={() => removeQuickLink(index)}
+                    className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={addQuickLink}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add Quick Link
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={handleFooterSave}
+              className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-all flex items-center gap-2"
+            >
+              <Save size={18} />
+              Save Footer Content
+            </button>
+            {footerSaved && (
+              <span className="text-green-600 font-medium">✓ Footer content saved!</span>
             )}
           </div>
         </div>
