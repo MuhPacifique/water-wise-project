@@ -70,7 +70,6 @@ export const SOLUTIONS_ITEMS = [
   'Educational Videos & 3D Animation',
   'Interactive Tutorials',
   'Professional Trainings',
-  'Local Language Learning Materials',
   'Sharing Community Testimonies',
   'Water Campaigns in Rural Areas'
 ];

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Play, Download, Eye, Calendar, User, Home, Star } from 'lucide-react';
+import { Video, Play, Download, Eye, Calendar, User, Home, Star, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { googleTranslateService } from '../services/gemini';
 import { Language } from '../types';
@@ -93,7 +93,7 @@ const EducationalVideos: React.FC = () => {
 
   return (
     <motion.div
-      className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-24"
+      className="min-h-screen bg-slate-50 py-24"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -115,7 +115,7 @@ const EducationalVideos: React.FC = () => {
           variants={itemVariants}
         >
           <motion.div
-            className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-200"
+            className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-slate-200"
             whileHover={{ rotate: 360, scale: 1.1 }}
             transition={{ duration: 0.6 }}
           >
@@ -142,9 +142,9 @@ const EducationalVideos: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex items-center gap-3 text-blue-600">
+            <div className="flex items-center gap-3 text-slate-900">
               <motion.div
-                className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full"
+                className="w-8 h-8 border-2 border-slate-200 border-t-slate-900 rounded-full"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               ></motion.div>
@@ -208,12 +208,12 @@ const EducationalVideos: React.FC = () => {
               videos.map((video, i) => (
                 <motion.div
                   key={video.id}
-                  className="bg-white rounded-2xl shadow-lg shadow-blue-100 border border-slate-100 overflow-hidden group"
+                  className="bg-white rounded-[1.5rem] shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden group"
                   variants={videoCardVariants}
                   custom={i}
                   whileHover="hover"
                 >
-                  <div className="aspect-video bg-slate-100 relative overflow-hidden">
+                  <div className="aspect-video bg-slate-200 relative overflow-hidden">
                     <a href={`/api/resources/${video.id}/view`} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
                       {video.thumbnail_url ? (
                         <motion.img
@@ -225,17 +225,11 @@ const EducationalVideos: React.FC = () => {
                         />
                       ) : (
                         <motion.div
-                          className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center"
+                          className="w-full h-full bg-slate-200 flex items-center justify-center"
                           whileHover={{ scale: 1.05 }}
                           transition={{ duration: 0.3 }}
                         >
-                          <motion.div
-                            className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Play className="text-white ml-1" size={24} />
-                          </motion.div>
+                          <Play className="text-slate-400" size={48} />
                         </motion.div>
                       )}
                     </a>
@@ -243,92 +237,70 @@ const EducationalVideos: React.FC = () => {
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
                       {video.is_featured ? (
                         <motion.div
-                          className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-lg text-xs font-black flex items-center gap-1 shadow-lg shadow-yellow-200/50"
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.3 + i * 0.1 }}
+                          className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-lg"
                         >
-                          <Star size={12} fill="currentColor" />
+                          <Star size={10} fill="currentColor" />
                           FEATURED
                         </motion.div>
                       ) : null}
                     </div>
 
-                    <motion.div
-                      className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + i * 0.1 }}
-                    >
-                      <Video size={12} />
-                      VIDEO
-                    </motion.div>
+                    <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1">
+                      <Music size={10} className="text-white" />
+                      {video.duration || '2:20'}
+                    </div>
                     
                     <a href={`/api/resources/${video.id}/view`} target="_blank" rel="noopener noreferrer">
                       <motion.div
-                        className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors duration-300 flex items-center justify-center"
+                        className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 flex items-center justify-center"
                         initial={{ opacity: 0 }}
                         whileHover={{ opacity: 1 }}
                       >
                         <motion.div
-                          className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
+                          className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
                           whileHover={{ scale: 1.1 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <Play className="text-white ml-1" size={24} />
+                          <Play className="text-white ml-0.5" size={20} />
                         </motion.div>
                       </motion.div>
                     </a>
                   </div>
 
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2">
+                  <div className="p-5">
+                    <h3 className="text-base font-bold text-slate-900 mb-1.5 line-clamp-2">
                       {video.translated_title || video.title}
                     </h3>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-3">
-                      {video.translated_description || video.description}
-                    </p>
-
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={12} />
-                        {new Date(video.created_at).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Eye size={12} />
-                        {video.view_count || 0} views
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <User size={12} />
-                        {video.uploaded_by_name || 'Anonymous'}
-                      </div>
+                    
+                    <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2">
+                        <motion.a
+                          href={`/api/resources/${video.id}/view`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Play size={12} fill="currentColor" />
+                          <TranslatableText text="Watch Now" />
+                        </motion.a>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                        <div className="flex items-center gap-1">
+                          <Eye size={12} />
+                          {video.view_count || 0}
+                        </div>
                         {video.file_url && (
-                          <>
-                            <motion.a
-                              href={`/api/resources/${video.id}/view`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <Play size={14} fill="currentColor" />
-                              <TranslatableText text="Watch" />
-                            </motion.a>
-                            <motion.a
-                              href={`/api/resources/${video.id}/download`}
-                              className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              title="Download video"
-                            >
-                              <Download size={16} />
-                            </motion.a>
-                          </>
+                          <motion.a
+                            href={`/api/resources/${video.id}/download`}
+                            className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            title="Download"
+                          >
+                            <Download size={12} />
+                          </motion.a>
                         )}
                       </div>
                     </div>

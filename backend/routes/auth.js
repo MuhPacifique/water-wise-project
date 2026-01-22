@@ -65,7 +65,7 @@ router.post('/register', [
   // Log registration activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [userId, 'user_registered', `User ${name} registered`, JSON.stringify({ email, country }), req.ip, req.get('User-Agent')]
+    [userId, 'user_registered', `User ${name} registered`, JSON.stringify({ email, country }), req.ip || null, req.get('User-Agent') || null]
   );
 
   // Send token response
@@ -138,7 +138,7 @@ router.post('/login', [
   // Log login activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [user.id, 'user_login', `User ${user.name} logged in`, JSON.stringify({ email }), req.ip, req.get('User-Agent')]
+    [user.id, 'user_login', `User ${user.name} logged in`, JSON.stringify({ email }), req.ip || null, req.get('User-Agent') || null]
   );
 
   // Remove password from user object
@@ -253,7 +253,7 @@ router.put('/updatepassword', require('../middleware/auth').protect, [
   // Log password change activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'password_changed', 'User changed password', JSON.stringify({}), req.ip, req.get('User-Agent')]
+    [req.user.id, 'password_changed', 'User changed password', JSON.stringify({}), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({
@@ -313,7 +313,7 @@ router.post('/forgotpassword', [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [user.id, 'password_reset_requested', `Password reset requested for ${email}`, JSON.stringify({ email }), req.ip, req.get('User-Agent')]
+    [user.id, 'password_reset_requested', `Password reset requested for ${email}`, JSON.stringify({ email }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({
@@ -369,7 +369,7 @@ router.put('/resetpassword/:token', [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [user.id, 'password_reset', 'Password reset completed', JSON.stringify({}), req.ip, req.get('User-Agent')]
+    [user.id, 'password_reset', 'Password reset completed', JSON.stringify({}), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({

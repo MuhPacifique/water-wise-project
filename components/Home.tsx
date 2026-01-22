@@ -15,6 +15,46 @@ import ChatHub from './ChatHub';
 import ResourceHub from './ResourceHub';
 import Footer from './Footer';
 import MaintenanceMode from './MaintenanceMode';
+import { Sparkles, Info, Lightbulb } from 'lucide-react';
+
+const DailyInsight: React.FC<{ TranslatableText: React.FC<{ text: string }> }> = ({ TranslatableText }) => {
+  const [insight, setInsight] = useState<string>("");
+
+  useEffect(() => {
+    fetch('/api/consultation/daily-insight')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setInsight(data.data.insight);
+      })
+      .catch(console.error);
+  }, []);
+
+  if (!insight) return null;
+
+  return (
+    <motion.div
+      className="max-w-4xl mx-auto mb-12 px-4"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      <div className="bg-blue-50 border border-blue-100 rounded-[2rem] p-6 flex items-start gap-4 shadow-sm">
+        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+          <Lightbulb size={20} />
+        </div>
+        <div>
+          <h4 className="text-blue-900 font-black text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
+            <Sparkles size={12} />
+            Daily AI Insight
+          </h4>
+          <p className="text-blue-800 text-sm font-medium leading-relaxed">
+            <TranslatableText text={insight} />
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -264,8 +304,12 @@ const Home: React.FC = () => {
             transition={{ duration: 0.5 }}
           >
             <Navbar />
-
+            
             <main>
+              <div className="pt-8">
+                <DailyInsight TranslatableText={TranslatableText} />
+              </div>
+
               {visibilitySettings.showHero && (
                 <motion.section
                   initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}

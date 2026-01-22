@@ -13,7 +13,7 @@ const SolutionSection: React.FC<SolutionSectionProps> = ({ TranslatableText, ite
   const navigate = useNavigate();
 
   // Using component references instead of elements to avoid React.cloneElement type issues with Lucide icons
-  const IconComponents = [Video, BookOpen, GraduationCap, BookOpen, Users, Megaphone];
+  const IconComponents = [Video, BookOpen, GraduationCap, Users, Megaphone];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -94,10 +94,17 @@ const SolutionSection: React.FC<SolutionSectionProps> = ({ TranslatableText, ite
                 custom={idx}
                 whileHover="hover"
                 whileTap={{ scale: 0.98 }}
-                onClick={idx === 0 ? () => navigate('/educational-videos') : undefined}
+                onClick={
+                  idx === 0 ? () => navigate('/educational-videos') : 
+                  idx === 1 ? () => navigate('/interactive-tutorials') : 
+                  idx === 2 ? () => navigate('/professional-trainings') : 
+                  idx === 3 ? () => navigate('/community-testimonies') : 
+                  idx === 4 ? () => navigate('/water-campaigns') : 
+                  undefined
+                }
               >
                 <motion.div
-                  className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6"
+                  className="w-12 h-12 bg-slate-100 text-slate-900 rounded-xl flex items-center justify-center mb-6"
                   whileHover={{ rotate: 360, scale: 1.1 }}
                   transition={{ duration: 0.6 }}
                 >
@@ -110,7 +117,7 @@ const SolutionSection: React.FC<SolutionSectionProps> = ({ TranslatableText, ite
                   <TranslatableText text="Providing accessible and culturally relevant education to all age groups in their native languages." />
                 </p>
                 <motion.div
-                  className="flex items-center gap-2 text-blue-600 text-xs font-bold uppercase tracking-wider"
+                  className="flex items-center gap-2 text-slate-600 text-xs font-bold uppercase tracking-wider"
                   whileHover={{ scale: 1.05 }}
                 >
                   <motion.div
@@ -156,6 +163,7 @@ const SolutionSection: React.FC<SolutionSectionProps> = ({ TranslatableText, ite
             viewport={{ once: true }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/educational-videos')}
           >
             <TranslatableText text="Watch Demo" />
           </motion.button>

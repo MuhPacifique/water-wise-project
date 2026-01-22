@@ -205,7 +205,7 @@ router.get('/', optionalAuth, [
   if (req.user) {
     await pool.execute(
       'INSERT INTO analytics (event_type, event_data, user_id, ip_address, user_agent, page_url) VALUES (?, ?, ?, ?, ?, ?)',
-      ['resources_browse', JSON.stringify({ page, limit, type, category, search }), req.user.id, req.ip, req.get('User-Agent'), req.originalUrl]
+      ['resources_browse', JSON.stringify({ page, limit, type, category, search }), req.user.id, req.ip || null, req.get('User-Agent') || null, req.originalUrl]
     );
   }
 
@@ -272,7 +272,7 @@ router.get('/:id', optionalAuth, [
   if (req.user) {
     await pool.execute(
       'INSERT INTO analytics (event_type, event_data, user_id, ip_address, user_agent, page_url) VALUES (?, ?, ?, ?, ?, ?)',
-      ['resource_view', JSON.stringify({ resourceId: id }), req.user.id, req.ip, req.get('User-Agent'), req.originalUrl]
+      ['resource_view', JSON.stringify({ resourceId: id }), req.user.id, req.ip || null, req.get('User-Agent') || null, req.originalUrl]
     );
   }
 
@@ -355,7 +355,9 @@ router.post('/', protect, (req, res, next) => {
     tags,
     isPublic = true,
     isFeatured = false,
-    language = 'en'
+    language = 'en',
+    file_url: body_file_url,
+    thumbnail_url: body_thumbnail_url
   } = req.body;
 
   const pool = getPool();
@@ -376,8 +378,8 @@ router.post('/', protect, (req, res, next) => {
     description: description || '',
     type,
     file_path: req.files.file ? req.files.file[0].path : null,
-    file_url: req.files.file ? `/uploads/${req.files.file[0].filename}` : null,
-    thumbnail_url: req.files.thumbnail ? `/uploads/${req.files.thumbnail[0].filename}` : null,
+    file_url: req.files.file ? `/uploads/${req.files.file[0].filename}` : (body_file_url || null),
+    thumbnail_url: req.files.thumbnail ? `/uploads/${req.files.thumbnail[0].filename}` : (body_thumbnail_url || null),
     file_size: req.files.file ? req.files.file[0].size : null,
     mime_type: req.files.file ? req.files.file[0].mimetype : null,
     category: category || null,
@@ -418,7 +420,7 @@ router.post('/', protect, (req, res, next) => {
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'resource_uploaded', `Uploaded resource: ${title}`, JSON.stringify({ resourceId, type }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'resource_uploaded', `Uploaded resource: ${title}`, JSON.stringify({ resourceId, type }), req.ip || null, req.get('User-Agent') || null]
   );
 
   // Get created resource
@@ -477,7 +479,7 @@ router.put('/:id', protect, (req, res, next) => {
   }
 
   const { id } = req.params;
-  const { title, description, category, tags, isPublic, isFeatured } = req.body;
+  const { title, description, category, tags, isPublic, isFeatured, file_url, thumbnail_url } = req.body;
   const pool = getPool();
 
   // Check if resource exists and user has permission
@@ -577,6 +579,20 @@ router.put('/:id', protect, (req, res, next) => {
     
     updateFields.push('thumbnail_url = ?');
     updateValues.push(`/uploads/${req.files.thumbnail[0].filename}`);
+  } else if (thumbnail_url !== undefined) {
+    updateFields.push('thumbnail_url = ?');
+    updateValues.push(thumbnail_url);
+  }
+
+  // Handle new file URL if no file uploaded
+  if (!req.files || !req.files.file) {
+    if (file_url !== undefined) {
+      updateFields.push('file_url = ?');
+      updateValues.push(file_url);
+      // If it's a URL, we might want to clear file_path or set it to null
+      updateFields.push('file_path = ?');
+      updateValues.push(null);
+    }
   }
 
   if (updateFields.length === 0) {
@@ -595,7 +611,7 @@ router.put('/:id', protect, (req, res, next) => {
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'resource_updated', `Updated resource: ${resource.title}`, JSON.stringify({ resourceId: id }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'resource_updated', `Updated resource: ${resource.title}`, JSON.stringify({ resourceId: id }), req.ip || null, req.get('User-Agent') || null]
   );
 
   // Get updated resource
@@ -659,7 +675,7 @@ router.delete('/:id', protect, [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'resource_deleted', `Deleted (archived) resource: ${resource.title}`, JSON.stringify({ resourceId: id, softDelete: true }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'resource_deleted', `Deleted (archived) resource: ${resource.title}`, JSON.stringify({ resourceId: id, softDelete: true }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({
@@ -707,7 +723,7 @@ router.post('/:id/restore', protect, authorize('admin'), [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'resource_restored', `Restored resource: ${resource.title}`, JSON.stringify({ resourceId: id }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'resource_restored', `Restored resource: ${resource.title}`, JSON.stringify({ resourceId: id }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({
@@ -766,7 +782,7 @@ router.get('/:id/download', optionalAuth, [
   if (req.user) {
     await pool.execute(
       'INSERT INTO analytics (event_type, event_data, user_id, ip_address, user_agent, page_url) VALUES (?, ?, ?, ?, ?, ?)',
-      ['resource_download', JSON.stringify({ resourceId: id }), req.user.id, req.ip, req.get('User-Agent'), req.originalUrl]
+      ['resource_download', JSON.stringify({ resourceId: id }), req.user.id, req.ip || null, req.get('User-Agent') || null, req.originalUrl]
     );
   }
 

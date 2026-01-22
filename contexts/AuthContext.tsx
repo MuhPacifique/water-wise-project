@@ -12,6 +12,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -131,6 +132,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const register = async (name: string, email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Registration failed';
+        try {
+          const error = await response.json();
+          errorMessage = error.message || (error.error && error.error.message) || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error JSON response from register:', jsonError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const { token, data: responseData } = data;
+      const userData = responseData?.user;
+
+      if (!token || !userData) {
+        throw new Error('Invalid response structure from server');
+      }
+
+      localStorage.setItem('token', token);
+      setUser(userData);
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -139,6 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     login,
+    register,
     logout,
     isLoading,
   };

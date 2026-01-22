@@ -3,7 +3,7 @@
 ## High Priority
 - [ ] Implement user authentication system
 - [ ] Add video upload functionality
-- [ ] Create admin dashboard for content management
+- [x] Create admin dashboard for content management (Testimonies, Campaigns, etc.)
 - [ ] Implement translation system for multiple languages
 - [ ] Add analytics and reporting features
 

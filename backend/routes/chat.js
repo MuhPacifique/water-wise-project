@@ -292,7 +292,7 @@ router.post('/messages', protect, [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'chat_message_sent', `Sent message in ${room}`, JSON.stringify({ messageId, room }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'chat_message_sent', `Sent message in ${room}`, JSON.stringify({ messageId, room }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(201).json({
@@ -416,7 +416,7 @@ router.delete('/messages/:id', protect, [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'chat_message_deleted', `Deleted message in ${chatMessage.room}`, JSON.stringify({ messageId: id, room: chatMessage.room }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'chat_message_deleted', `Deleted message in ${chatMessage.room}`, JSON.stringify({ messageId: id, room: chatMessage.room }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({
@@ -551,7 +551,7 @@ router.post('/rooms/:id/join', protect, [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'chat_room_joined', `Joined chat room: ${room.name}`, JSON.stringify({ roomId: id, roomName: room.name }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'chat_room_joined', `Joined chat room: ${room.name}`, JSON.stringify({ roomId: id, roomName: room.name }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({
@@ -606,7 +606,7 @@ router.post('/rooms/:id/leave', protect, [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'chat_room_left', `Left chat room`, JSON.stringify({ roomId: id }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'chat_room_left', `Left chat room`, JSON.stringify({ roomId: id }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({

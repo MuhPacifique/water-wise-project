@@ -281,6 +281,79 @@ CREATE TABLE IF NOT EXISTS settings (
   INDEX idx_public (is_public)
 );
 
+-- Interactive Tutorials table
+CREATE TABLE IF NOT EXISTS interactive_tutorials (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(500) NOT NULL,
+  description TEXT,
+  video_url VARCHAR(1000) NOT NULL,
+  thumbnail_url VARCHAR(1000),
+  duration INT,
+  category VARCHAR(100),
+  difficulty ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner',
+  language VARCHAR(10) DEFAULT 'en',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_by INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_category (category),
+  INDEX idx_difficulty (difficulty),
+  INDEX idx_language (language),
+  INDEX idx_active (is_active)
+);
+
+-- Professional Trainings table
+CREATE TABLE IF NOT EXISTS professional_trainings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(500) NOT NULL,
+  description TEXT,
+  document_url VARCHAR(1000) NOT NULL,
+  thumbnail_url VARCHAR(1000),
+  category VARCHAR(100),
+  difficulty ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner',
+  language VARCHAR(10) DEFAULT 'en',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_by INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_category (category),
+  INDEX idx_difficulty (difficulty),
+  INDEX idx_language (language),
+  INDEX idx_active (is_active)
+);
+
+-- Community Testimonies table
+CREATE TABLE IF NOT EXISTS community_testimonies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  location VARCHAR(255),
+  text TEXT NOT NULL,
+  likes INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_active (is_active)
+);
+
+-- Water Campaigns table
+CREATE TABLE IF NOT EXISTS water_campaigns (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(500) NOT NULL,
+  location VARCHAR(255),
+  date VARCHAR(100),
+  participants INT DEFAULT 0,
+  status ENUM('Planned', 'Upcoming', 'Ongoing', 'Completed') DEFAULT 'Planned',
+  campaign_type ENUM('Tree Planting', 'Plastic Collection', 'Agroforestry', 'Awareness', 'Other') DEFAULT 'Awareness',
+  image_url VARCHAR(1000),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_status (status),
+  INDEX idx_active (is_active)
+);
+
 
 
 -- Insert default settings
@@ -471,6 +544,7 @@ async function runMigration() {
     console.log('  - project_updates');
     console.log('  - notifications');
     console.log('  - settings');
+    console.log('  - interactive_tutorials');
     console.log('🎯 Default admin user created: admin@waterwise.org / admin123');
     console.log('💬 Default chat rooms created');
 

@@ -227,7 +227,7 @@ router.put('/:id', protect, [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'user_updated', `Updated user profile`, JSON.stringify({ userId: id }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'user_updated', `Updated user profile`, JSON.stringify({ userId: id }), req.ip || null, req.get('User-Agent') || null]
   );
 
   // Get updated user
@@ -294,7 +294,7 @@ router.delete('/:id', protect, authorize('admin'), [
   // Log activity
   await pool.execute(
     'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.id, 'user_deleted', `Deactivated user: ${user.name}`, JSON.stringify({ userId: id, userName: user.name }), req.ip, req.get('User-Agent')]
+    [req.user.id, 'user_deleted', `Deactivated user: ${user.name}`, JSON.stringify({ userId: id, userName: user.name }), req.ip || null, req.get('User-Agent') || null]
   );
 
   res.status(200).json({

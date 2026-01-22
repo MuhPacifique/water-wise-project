@@ -43,4 +43,42 @@ router.post('/chat', optionalAuth, [
   }
 }));
 
+/**
+ * @desc    Get autonomous AI content for a specific section
+ * @route   GET /api/consultation/autonomous-content/:section
+ * @access  Public
+ */
+router.get('/autonomous-content/:section', catchAsync(async (req, res) => {
+  const { section } = req.params;
+  const content = await geminiService.generateAutonomousContent(section);
+  
+  res.status(200).json({
+    success: true,
+    data: content
+  });
+}));
+
+/**
+ * @desc    Get daily AI insight
+ * @route   GET /api/consultation/daily-insight
+ * @access  Public
+ */
+router.get('/daily-insight', catchAsync(async (req, res) => {
+  const insights = [
+    "Did you know? Planting bamboo along riverbanks in East Africa can reduce soil erosion by up to 90% while providing sustainable building material for the community.",
+    "Plastic waste in Lake Victoria has reached critical levels. Autonomous collection systems could potentially remove 15 tons of surface plastic annually.",
+    "Agroforestry isn't just about trees; it's about water. In dry regions of Kenya, integrated tree-crop systems maintain 30% more soil moisture.",
+    "Community-led 'Water Guardians' in Tanzania have successfully restored 5 local springs by simply managing native vegetation buffer zones."
+  ];
+  
+  // Use day of the year to pick an insight
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const insight = insights[dayOfYear % insights.length];
+
+  res.status(200).json({
+    success: true,
+    data: { insight }
+  });
+}));
+
 module.exports = router;

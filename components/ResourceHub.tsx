@@ -15,6 +15,10 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [uploads, setUploads] = useState<{id: number, name: string, type: 'doc' | 'video', url?: string, translatedName?: string}[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResources, setTotalResources] = useState(0);
+  const limit = 12;
 
   // Fetch resources from API
   useEffect(() => {
@@ -23,8 +27,8 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
         setIsLoading(true);
         setError(null);
 
-        // Make API call to fetch resources
-        const response = await fetch('/api/resources?limit=20');
+        // Make API call to fetch resources with pagination
+        const response = await fetch(`/api/resources?page=${currentPage}&limit=${limit}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -46,6 +50,8 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
         }));
 
         setUploads(resources);
+        setTotalPages(data.data.pagination.totalPages);
+        setTotalResources(data.data.pagination.total);
       } catch (err) {
         console.error('Error fetching resources:', err);
         setError('Failed to load resources from database. Please try again later.');
@@ -55,7 +61,7 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
     };
 
     fetchResources();
-  }, []);
+  }, [currentPage, limit]);
 
 
 
@@ -102,7 +108,7 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
 
   return (
     <motion.section
-      className="py-24 bg-blue-50/50 relative overflow-hidden"
+      className="py-24 bg-slate-50 relative overflow-hidden"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: "-100px" }}
@@ -128,7 +134,7 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
         </motion.div>
 
         <motion.div
-          className="bg-white rounded-[2.5rem] p-12 shadow-xl shadow-blue-100 border border-slate-100"
+          className="bg-white rounded-[2.5rem] p-12 shadow-xl shadow-slate-200 border border-slate-100"
           initial={{ scale: 0.95, opacity: 0 }}
           whileInView={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -150,7 +156,7 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.6 }}
               >
-                <FolderOpen className="text-blue-600" size={32} />
+                <FolderOpen className="text-slate-900" size={32} />
               </motion.div>
               <TranslatableText text="Resource Database" />
             </motion.h3>
@@ -161,7 +167,7 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
               >
-                {uploads.length} <TranslatableText text="Files" />
+                {totalResources} <TranslatableText text="Files" />
               </motion.span>
               {error && (
                 <motion.button
@@ -187,9 +193,9 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="flex items-center gap-3 text-blue-600">
+              <div className="flex items-center gap-3 text-slate-900">
                 <motion.div
-                  className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full"
+                  className="w-6 h-6 border-2 border-slate-200 border-t-slate-900 rounded-full"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 ></motion.div>
@@ -224,65 +230,103 @@ const ResourceHub: React.FC<ResourceHubProps> = ({ TranslatableText }) => {
               </motion.button>
             </motion.div>
           ) : (
-            <motion.div
-              className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"
-              variants={containerVariants}
-            >
-              {uploads.length === 0 ? (
+            <>
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+                variants={containerVariants}
+              >
+                {uploads.length === 0 ? (
+                  <motion.div
+                    className="col-span-full text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <p className="text-slate-400 font-bold italic">
+                      <TranslatableText text="No resources available in database." />
+                    </p>
+                  </motion.div>
+                ) : (
+                  uploads.map((file, i) => (
+                    <motion.div
+                      key={i}
+                      className="bg-slate-50 rounded-2xl border border-slate-100 group hover:border-slate-300 hover:bg-white transition-all cursor-pointer overflow-hidden"
+                      variants={fileItemVariants}
+                      custom={i}
+                      whileHover="hover"
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="p-6">
+                        <motion.div
+                          className="w-16 h-16 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm mb-4"
+                          whileHover={{ rotate: 360, scale: 1.1 }}
+                          transition={{ duration: 0.6 }}
+                        >
+                          {file.type === 'video' ? <Video size={24} /> : <FileText size={24} />}
+                        </motion.div>
+                        <div className="min-h-0">
+                          <p className="text-sm font-bold text-slate-800 mb-2 line-clamp-2">{file.name}</p>
+                          <p className="text-[10px] text-slate-500 font-black uppercase tracking-tighter mb-4">
+                            <TranslatableText text="Database Resource" />
+                          </p>
+                        </div>
+                        {file.url && (
+                          <motion.a
+                            href={`/api/resources/${file.id}/download`}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <TranslatableText text="Download" />
+                          </motion.a>
+                        )}
+                        <motion.div
+                          className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity mt-2"
+                          whileHover={{ rotate: 360 }}
+                          transition={{ duration: 0.6 }}
+                        >
+                          <CheckCircle size={18} />
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
                 <motion.div
-                  className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100"
+                  className="flex items-center justify-center gap-2 mt-8"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <p className="text-slate-400 font-bold italic">
-                    <TranslatableText text="No resources available in database." />
-                  </p>
-                </motion.div>
-              ) : (
-                uploads.map((file, i) => (
-                  <motion.div
-                    key={i}
-                    className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer"
-                    variants={fileItemVariants}
-                    custom={i}
-                    whileHover="hover"
-                    whileTap={{ scale: 0.98 }}
+                  <motion.button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <motion.div
-                      className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"
-                      whileHover={{ rotate: 360, scale: 1.1 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      {file.type === 'video' ? <Video size={20} /> : <FileText size={20} />}
-                    </motion.div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800 truncate">{file.name}</p>
-                      <p className="text-[10px] text-blue-600 font-black uppercase tracking-tighter">
-                        <TranslatableText text="Database Resource" />
-                      </p>
-                    </div>
-                    {file.url && (
-                      <motion.a
-                        href={`/api/resources/${file.id}/download`}
-                        className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <TranslatableText text="Download" />
-                      </motion.a>
-                    )}
-                    <motion.div
-                      className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                      whileHover={{ rotate: 360 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <CheckCircle size={18} />
-                    </motion.div>
-                  </motion.div>
-                ))
+                    <TranslatableText text="Previous" />
+                  </motion.button>
+
+                  <span className="px-4 py-2 text-slate-700 font-bold">
+                    {currentPage} / {totalPages}
+                  </span>
+
+                  <motion.button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <TranslatableText text="Next" />
+                  </motion.button>
+                </motion.div>
               )}
-            </motion.div>
+            </>
           )}
         </motion.div>
       </div>

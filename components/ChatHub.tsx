@@ -205,14 +205,17 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
                 <ShieldCheck size={24} />
               </motion.div>
               <div>
-                <p className="font-black text-sm tracking-tight"><TranslatableText text="Project Specialist" /></p>
+                <p className="font-black text-sm tracking-tight flex items-center gap-2">
+                  <TranslatableText text="Gemini AI Specialist" />
+                  <span className="bg-white/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">1.5 Flash</span>
+                </p>
                 <div className="flex items-center gap-2 opacity-80">
                   <motion.span
                     className="w-2 h-2 bg-green-400 rounded-full"
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   ></motion.span>
-                  <p className="text-[10px] uppercase font-bold tracking-widest"><TranslatableText text="Online Now" /></p>
+                  <p className="text-[10px] uppercase font-bold tracking-widest"><TranslatableText text="Autonomous Online" /></p>
                 </div>
               </div>
             </div>
@@ -226,6 +229,34 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
 
           {/* Messages Container */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+            {messages.length === 1 && (
+              <motion.div
+                className="grid grid-cols-2 gap-3 mb-8"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <p className="col-span-2 text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">
+                  <TranslatableText text="Quick Consult" />
+                </p>
+                {[
+                  "How to protect river banks?",
+                  "Reducing plastic in water?",
+                  "Best trees for water?",
+                  "What is agroforestry?"
+                ].map((q, idx) => (
+                  <motion.button
+                    key={idx}
+                    onClick={() => { setInput(q); }}
+                    className="text-left p-3 rounded-2xl bg-white border border-slate-100 text-xs font-bold text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all shadow-sm"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {q}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
             <AnimatePresence>
               {messages.map((msg, i) => (
                 <motion.div
