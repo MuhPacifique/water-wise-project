@@ -17,10 +17,11 @@ import ChatHub from './ChatHub';
 import ResourceHub from './ResourceHub';
 import Footer from './Footer';
 import MaintenanceMode from './MaintenanceMode';
-import { Sparkles, Info, Lightbulb } from 'lucide-react';
+import { Sparkles, Info, Lightbulb, X } from 'lucide-react';
 
 const DailyInsight: React.FC<{ TranslatableText: React.FC<{ text: string }> }> = ({ TranslatableText }) => {
   const [insight, setInsight] = useState<string>("");
+  const [isVisible, setIsVisible] = useState<boolean>(true);
 
   useEffect(() => {
     fetch('/api/consultation/daily-insight')
@@ -31,25 +32,36 @@ const DailyInsight: React.FC<{ TranslatableText: React.FC<{ text: string }> }> =
       .catch(console.error);
   }, []);
 
-  if (!insight) return null;
+  if (!insight || !isVisible) return null;
 
   return (
     <motion.div
-      className="max-w-4xl mx-auto mb-12 px-4"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      className="fixed bottom-6 right-6 z-[60] max-w-[320px] sm:max-w-md"
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+      transition={{ duration: 0.5 }}
     >
-      <div className="bg-blue-50 border border-blue-100 rounded-[2rem] p-6 flex items-start gap-4 shadow-sm">
-        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+      <div className="bg-white/95 backdrop-blur-sm border border-blue-100 rounded-3xl p-5 flex items-start gap-4 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+        
+        <button 
+          onClick={() => setIsVisible(false)}
+          className="absolute top-3 right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200 z-10"
+          aria-label="Hide insight"
+        >
+          <X size={14} />
+        </button>
+
+        <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
           <Lightbulb size={20} />
         </div>
-        <div>
-          <h4 className="text-blue-900 font-black text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
-            <Sparkles size={12} />
+        <div className="pr-4">
+          <h4 className="text-blue-900 font-black text-[10px] uppercase tracking-widest mb-1.5 flex items-center gap-2">
+            <Sparkles size={12} className="text-blue-600" />
             Daily AI Insight
           </h4>
-          <p className="text-blue-800 text-sm font-medium leading-relaxed">
+          <p className="text-slate-700 text-xs font-bold leading-relaxed">
             <TranslatableText text={insight} />
           </p>
         </div>
@@ -251,10 +263,6 @@ const Home: React.FC = () => {
             <Navbar />
             
             <main>
-              <div className="pt-8">
-                <DailyInsight TranslatableText={TranslatableText} />
-              </div>
-
               {visibilitySettings.showHero && (
                 <motion.section
                   initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
@@ -346,10 +354,12 @@ const Home: React.FC = () => {
 
             {visibilitySettings.showFooter && <Footer TranslatableText={TranslatableText} content={footerContent} />}
 
+            <DailyInsight TranslatableText={TranslatableText} />
+
             {/* Global Loading Spinner for Translations */}
             {isTranslating && (
               <motion.div
-                className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+                className="fixed bottom-6 left-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
