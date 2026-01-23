@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, Component, ReactNode, ErrorInfo } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Language, TranslationContextType, ProblemContent, TeamMember, FooterContent } from '../types';
 import { googleTranslateService } from '../services/gemini';
@@ -148,10 +149,10 @@ interface FrontendVisibility {
 }
 
 const Home: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { language, isTranslating } = useTranslation();
   const { siteContent, setSiteContent } = useContent();
-  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
+  const { maintenanceMode } = useOutletContext<{ maintenanceMode: boolean }>();
   const [loading, setLoading] = useState<boolean>(true);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(TEAM);
   const [initiatives, setInitiatives] = useState<any[]>(ACTIVITIES);
@@ -182,8 +183,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const [maintenanceResponse, visibilityResponse, contentResponse, problemResponse, teamResponse, footerResponse, initiativesResponse] = await Promise.all([
-          fetch('/api/settings/maintenance'),
+        const [visibilityResponse, contentResponse, problemResponse, teamResponse, footerResponse, initiativesResponse] = await Promise.all([
           fetch('/api/settings/frontend-visibility'),
           fetch('/api/settings/content'),
           fetch('/api/settings/problem-content'),
@@ -192,7 +192,6 @@ const Home: React.FC = () => {
           fetch('/api/initiatives')
         ]);
 
-        const maintenanceData = await maintenanceResponse.json();
         const visibilityData = await visibilityResponse.json();
         const contentData = await contentResponse.json();
         const problemData = await problemResponse.json();
@@ -200,7 +199,6 @@ const Home: React.FC = () => {
         const footerData = await footerResponse.json();
         const initiativesData = await initiativesResponse.json();
 
-        setMaintenanceMode(maintenanceData.maintenanceMode || false);
         setVisibilitySettings(visibilityData.data || visibilitySettings);
         if (contentData.success && contentData.data) {
           setSiteContent(contentData.data);
@@ -232,7 +230,7 @@ const Home: React.FC = () => {
     fetchSettings();
   }, []);
 
-  // Show loading state while fetching maintenance mode
+  // Show loading state while fetching settings
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
@@ -241,19 +239,8 @@ const Home: React.FC = () => {
     );
   }
 
-  // Show maintenance mode if enabled (unless user is an admin)
-  if (maintenanceMode && user?.role !== 'admin') {
-    return <MaintenanceMode />;
-  }
-
   return (
     <ErrorBoundary>
-      {maintenanceMode && user?.role === 'admin' && (
-            <div className="bg-orange-600 text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2 sticky top-0 z-[100]">
-              <ShieldAlert size={16} />
-              MAINTENANCE MODE IS ACTIVE - Showing site to administrator only
-            </div>
-          )}
           <motion.div
             className="min-h-screen bg-water-pattern transition-colors duration-500"
             initial={prefersReducedMotion ? {} : { opacity: 0 }}

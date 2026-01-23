@@ -26,6 +26,8 @@ interface FrontendSettings {
   showFooter: boolean;
   showNav: boolean;
   maintenanceMode: boolean;
+  maintenanceProgress: number;
+  maintenanceCompletionDate: string;
   darkMode: boolean;
 }
 
@@ -48,6 +50,8 @@ const FrontendControls: React.FC = () => {
     showFooter: true,
     showNav: true,
     maintenanceMode: false,
+    maintenanceProgress: 0,
+    maintenanceCompletionDate: '',
     darkMode: false,
   });
   const [content, setContent] = useState<SiteContent>({
@@ -798,6 +802,42 @@ const FrontendControls: React.FC = () => {
             )}
           </button>
         </div>
+
+        {settings.maintenanceMode && (
+          <motion.div 
+            className="mt-6 pt-6 border-t border-orange-200 space-y-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Progress Percentage ({settings.maintenanceProgress}%)
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={settings.maintenanceProgress}
+                  onChange={(e) => setSettings({ ...settings, maintenanceProgress: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Estimated Completion Date
+                </label>
+                <input
+                  type="text"
+                  value={settings.maintenanceCompletionDate}
+                  onChange={(e) => setSettings({ ...settings, maintenanceCompletionDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-orange-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                  placeholder="e.g. Saturday, Sunday 24th 2026"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Dark Mode */}

@@ -7,6 +7,7 @@ import { ContentProvider } from './contexts/ContentContext';
 import Home from './components/Home';
 import Login from './components/Login';
 import AdminPage from './components/AdminPage';
+import MaintenanceGuard from './components/MaintenanceGuard';
 import EducationalVideos from './components/EducationalVideos';
 import InteractiveTutorials from './components/InteractiveTutorials';
 import ProfessionalTrainings from './components/ProfessionalTrainings';
@@ -26,19 +27,24 @@ const App: React.FC = () => {
           <ContentProvider>
             <ThemeProvider>
               <Routes>
-                <Route path="/" element={<Home />} />
+                {/* Public routes outside maintenance mode check (for admins) */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/educational-videos" element={<EducationalVideos />} />
-                <Route path="/interactive-tutorials" element={<InteractiveTutorials />} />
-                <Route path="/professional-trainings" element={<ProfessionalTrainings />} />
-                <Route path="/community-testimonies" element={<CommunityTestimonies />} />
-                <Route path="/water-campaigns" element={<WaterCampaigns />} />
-                <Route path="/join-campaign/:id" element={<JoinCampaign />} />
-                <Route path="/campaign-details/:id" element={<CampaignDetails />} />
-                <Route path="/initiative/:id" element={<InitiativeDetails />} />
-                <Route path="/volunteer" element={<VolunteerPage />} />
-                <Route path="/donate" element={<DonatePage />} />
+                
+                {/* Routes protected by MaintenanceGuard */}
+                <Route element={<MaintenanceGuard />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/educational-videos" element={<EducationalVideos />} />
+                  <Route path="/interactive-tutorials" element={<InteractiveTutorials />} />
+                  <Route path="/professional-trainings" element={<ProfessionalTrainings />} />
+                  <Route path="/community-testimonies" element={<CommunityTestimonies />} />
+                  <Route path="/water-campaigns" element={<WaterCampaigns />} />
+                  <Route path="/join-campaign/:id" element={<JoinCampaign />} />
+                  <Route path="/campaign-details/:id" element={<CampaignDetails />} />
+                  <Route path="/initiative/:id" element={<InitiativeDetails />} />
+                  <Route path="/volunteer" element={<VolunteerPage />} />
+                  <Route path="/donate" element={<DonatePage />} />
+                </Route>
               </Routes>
             </ThemeProvider>
           </ContentProvider>

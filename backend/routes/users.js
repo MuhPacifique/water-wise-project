@@ -7,6 +7,115 @@ const { getPool } = require('../config/database');
 
 const router = express.Router();
 
+// @desc    Admin create user
+// @route   POST /api/users
+// @access  Private (admin only)
+router.post('/', protect, authorize('admin'), [
+  body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  body('role').optional().isIn(['user', 'moderator', 'admin']).withMessage('Invalid role'),
+  body('country').optional().trim().isLength({ max: 100 }).withMessage('Country must be less than 100 characters')
+], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
+
+  const { name, email, password, role = 'user', country } = req.body;
+  const pool = getPool();
+
+  // Check if user already exists
+  const [existingUsers] = await pool.execute(
+    'SELECT id FROM users WHERE email = ?',
+    [email]
+  );
+
+  if (existingUsers.length > 0) {
+    return next(new AppError('User with this email already exists', 400));
+  }
+
+  // Hash password
+  const salt = await bcrypt.genSalt(12);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  // Create user
+  const [result] = await pool.execute(
+    `INSERT INTO users (name, email, password, role, country, is_active, email_verified)
+     VALUES (?, ?, ?, ?, ?, true, true)`,
+    [name, email, hashedPassword, role, country || null]
+  );
+
+  const userId = result.insertId;
+
+  // Log activity
+  await pool.execute(
+    'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
+    [req.user.id, 'user_created', `Admin created user: ${name}`, JSON.stringify({ email, role }), req.ip || null, req.get('User-Agent') || null]
+  );
+
+  // Get created user
+  const [users] = await pool.execute(
+    'SELECT id, name, email, role, avatar, bio, location, country, is_active, email_verified, last_login, created_at, updated_at FROM users WHERE id = ?',
+    [userId]
+  );
+
+  res.status(201).json({
+    success: true,
+    data: {
+      user: users[0]
+    }
+  });
+}));
+
+// @desc    Admin update user password
+// @route   PUT /api/users/:id/password
+// @access  Private (admin only)
+router.put('/:id/password', protect, authorize('admin'), [
+  param('id').isInt({ min: 1 }).withMessage('User ID must be a positive integer'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
+
+  const { id } = req.params;
+  const { password } = req.body;
+  const pool = getPool();
+
+  // Check if user exists
+  const [users] = await pool.execute(
+    'SELECT id, name FROM users WHERE id = ?',
+    [id]
+  );
+
+  if (users.length === 0) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Hash new password
+  const salt = await bcrypt.genSalt(12);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  // Update password
+  await pool.execute(
+    'UPDATE users SET password = ? WHERE id = ?',
+    [hashedPassword, id]
+  );
+
+  // Log activity
+  await pool.execute(
+    'INSERT INTO activities (user_id, activity_type, description, metadata, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)',
+    [req.user.id, 'user_password_reset', `Admin reset password for user: ${users[0].name}`, JSON.stringify({ userId: id }), req.ip || null, req.get('User-Agent') || null]
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'User password updated successfully'
+  });
+}));
+
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private (admin only)

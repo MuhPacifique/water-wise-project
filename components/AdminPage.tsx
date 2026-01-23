@@ -25,7 +25,9 @@ import {
   X,
   ClipboardList,
   ExternalLink,
-  Info
+  Info,
+  Lock,
+  UserPlus
 } from 'lucide-react';
 
 interface User {
@@ -160,6 +162,11 @@ interface AnalyticsData {
   totalResources: number;
   totalMessages: number;
   activeUsers: number;
+  totalEvents?: number;
+  uniqueSessions?: number;
+  uniqueIPs?: number;
+  topPages?: any[];
+  dailyActivity?: any[];
 }
 
 interface DatabaseTable {
@@ -228,6 +235,9 @@ const AdminPage: React.FC = () => {
   const [showEditCampaignModal, setShowEditCampaignModal] = useState(false);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false);
   const [showEditInitiativeModal, setShowEditInitiativeModal] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
@@ -406,35 +416,46 @@ const AdminPage: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/analytics/summary', {
+      
+      // Fetch summary
+      const summaryRes = await fetch('/api/analytics/summary', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) {
-        try {
-          const data = await response.json();
-          setAnalytics(data.data);
-        } catch (jsonError) {
-          console.error('Failed to parse JSON response from analytics:', jsonError);
-          setError('Failed to parse analytics data');
-        }
-      } else {
-        // If endpoint doesn't exist, show demo data
-        console.warn('Analytics endpoint not available, using demo data');
-        setAnalytics({
-          totalUsers: 5,
-          totalResources: 12,
-          totalMessages: 48,
-          activeUsers: 3
-        });
+      
+      // Fetch site-wide details
+      const siteRes = await fetch('/api/analytics/site?days=30', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      let analyticsData: AnalyticsData = {
+        totalUsers: 0,
+        totalResources: 0,
+        totalMessages: 0,
+        activeUsers: 0
+      };
+
+      if (summaryRes.ok) {
+        const summary = await summaryRes.json();
+        analyticsData = { ...analyticsData, ...summary.data };
       }
+
+      if (siteRes.ok) {
+        const site = await siteRes.json();
+        const siteData = site.data;
+        analyticsData = {
+          ...analyticsData,
+          totalEvents: siteData.overview.totalEvents,
+          uniqueSessions: siteData.overview.uniqueSessions,
+          uniqueIPs: siteData.overview.uniqueIPs,
+          topPages: siteData.topPages,
+          dailyActivity: siteData.dailyActivity
+        };
+      }
+
+      setAnalytics(analyticsData);
     } catch (err) {
       console.error('Analytics fetch error:', err);
-      setAnalytics({
-        totalUsers: 5,
-        totalResources: 12,
-        totalMessages: 48,
-        activeUsers: 3
-      });
+      setError('Failed to fetch analytics data');
     } finally {
       setLoading(false);
     }
@@ -1654,6 +1675,54 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const addUser = async (userData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData),
+      });
+      if (response.ok) {
+        setShowAddUserModal(false);
+        fetchUsers();
+        fetchAnalytics();
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to add user');
+      }
+    } catch (err) {
+      setError('Failed to add user');
+    }
+  };
+
+  const updateUserPassword = async (userId: number, passwordData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/users/${userId}/password`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(passwordData),
+      });
+      if (response.ok) {
+        setShowUpdatePasswordModal(false);
+        setSelectedUserId(null);
+        // Could show a success message here
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to update password');
+      }
+    } catch (err) {
+      setError('Failed to update password');
+    }
+  };
+
   const addResource = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1810,81 +1879,124 @@ const AdminPage: React.FC = () => {
 
 
   const renderDashboard = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <motion.div
-        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
-        whileHover={{ scale: 1.02 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <Users className="text-blue-600" size={20} />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div
+          className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Users className="text-blue-600" size={20} />
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Total Users</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {analytics?.totalUsers || 0}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-600">Total Users</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {analytics?.totalUsers || 0}
-            </p>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <motion.div
-        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
-        whileHover={{ scale: 1.02 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-            <FileText className="text-green-600" size={20} />
+        <motion.div
+          className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <FileText className="text-green-600" size={20} />
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Resources</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {analytics?.totalResources || 0}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-600">Resources</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {analytics?.totalResources || 0}
-            </p>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <motion.div
-        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
-        whileHover={{ scale: 1.02 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-            <MessageSquare className="text-purple-600" size={20} />
+        <motion.div
+          className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <MessageSquare className="text-purple-600" size={20} />
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Chat Messages</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {analytics?.totalMessages || 0}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-600">Chat Messages</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {analytics?.totalMessages || 0}
-            </p>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <motion.div
-        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
-        whileHover={{ scale: 1.02 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-            <Shield className="text-orange-600" size={20} />
+        <motion.div
+          className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <Shield className="text-orange-600" size={20} />
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Active Users</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {analytics?.activeUsers || 0}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-600">Active Users</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {analytics?.activeUsers || 0}
-            </p>
+        </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Additional Stats */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Site Engagement (30 Days)</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+              <span className="text-slate-600">Total Events</span>
+              <span className="font-bold text-slate-900">{analytics?.totalEvents || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+              <span className="text-slate-600">Unique Sessions</span>
+              <span className="font-bold text-slate-900">{analytics?.uniqueSessions || 0}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+              <span className="text-slate-600">Unique IPs</span>
+              <span className="font-bold text-slate-900">{analytics?.uniqueIPs || 0}</span>
+            </div>
           </div>
         </div>
-      </motion.div>
+
+        {/* Top Pages */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Top Pages</h3>
+          <div className="space-y-2">
+            {analytics?.topPages?.map((page: any, index: number) => (
+              <div key={index} className="flex justify-between items-center text-sm">
+                <span className="text-slate-600 truncate mr-4">{page.page_url}</span>
+                <span className="font-medium text-slate-900">{page.visits} visits</span>
+              </div>
+            )) || <p className="text-slate-500 text-sm">No page data available</p>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 
   const renderUsers = () => (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-6 border-b border-slate-200">
+      <div className="p-6 border-b border-slate-200 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-slate-900">User Management</h3>
+        <button
+          onClick={() => setShowAddUserModal(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2 transition-colors"
+        >
+          <UserPlus size={16} />
+          Add User
+        </button>
       </div>
       {users.length === 0 ? (
         <div className="p-12 text-center">
@@ -1938,13 +2050,25 @@ const AdminPage: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
                   <button
                     onClick={() => openUserEditModal(user)}
-                    className="text-blue-600 hover:text-blue-900"
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="Edit User"
                   >
                     <Edit size={16} />
                   </button>
                   <button
+                    onClick={() => {
+                      setSelectedUserId(user.id);
+                      setShowUpdatePasswordModal(true);
+                    }}
+                    className="p-1 text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                    title="Change Password"
+                  >
+                    <Lock size={16} />
+                  </button>
+                  <button
                     onClick={() => deleteUser(user.id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Deactivate User"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -3016,6 +3140,127 @@ const AdminPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowUserEditModal(false)}
+                      className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAddUserModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+              <div className="p-6 border-b border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900">Add New User</h3>
+              </div>
+              <div className="p-6">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target as HTMLFormElement);
+                  const userData: any = {};
+                  for (let [key, value] of formData.entries()) {
+                    userData[key] = value;
+                  }
+                  addUser(userData);
+                }}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
+                    <input
+                      name="name"
+                      type="text"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <input
+                      name="email"
+                      type="email"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                    <input
+                      name="password"
+                      type="password"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Role</label>
+                    <select
+                      name="role"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="user">User</option>
+                      <option value="moderator">Moderator</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                      Create User
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddUserModal(false)}
+                      className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showUpdatePasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+              <div className="p-6 border-b border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900">Change User Password</h3>
+              </div>
+              <div className="p-6">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target as HTMLFormElement);
+                  const passwordData = { password: formData.get('password') };
+                  if (selectedUserId) updateUserPassword(selectedUserId, passwordData);
+                }}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">New Password</label>
+                    <input
+                      name="password"
+                      type="password"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700"
+                    >
+                      Update Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUpdatePasswordModal(false);
+                        setSelectedUserId(null);
+                      }}
                       className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
                     >
                       Cancel

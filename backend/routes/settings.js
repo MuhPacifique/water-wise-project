@@ -20,6 +20,8 @@ router.post('/frontend', protect, authorize('admin'), [
   body('showFooter').optional().isBoolean().withMessage('showFooter must be a boolean'),
   body('showNav').optional().isBoolean().withMessage('showNav must be a boolean'),
   body('maintenanceMode').optional().isBoolean().withMessage('maintenanceMode must be a boolean'),
+  body('maintenanceProgress').optional().isInt({ min: 0, max: 100 }).withMessage('maintenanceProgress must be between 0 and 100'),
+  body('maintenanceCompletionDate').optional().isString().trim(),
   body('darkMode').optional().isBoolean().withMessage('darkMode must be a boolean')
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
@@ -69,6 +71,8 @@ router.get('/frontend', protect, authorize('admin'), catchAsync(async (req, res,
     showFooter: true,
     showNav: true,
     maintenanceMode: false,
+    maintenanceProgress: 0,
+    maintenanceCompletionDate: '',
   };
 
   if (settings.length > 0) {
@@ -147,11 +151,15 @@ router.get('/maintenance', catchAsync(async (req, res, next) => {
   );
 
   let maintenanceMode = false;
+  let maintenanceProgress = 0;
+  let maintenanceCompletionDate = '';
 
   if (settings.length > 0) {
     try {
       const frontendSettings = JSON.parse(settings[0].setting_value);
       maintenanceMode = frontendSettings.maintenanceMode || false;
+      maintenanceProgress = frontendSettings.maintenanceProgress || 0;
+      maintenanceCompletionDate = frontendSettings.maintenanceCompletionDate || '';
     } catch (error) {
       console.error('Error parsing frontend settings:', error);
     }
@@ -159,7 +167,9 @@ router.get('/maintenance', catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    maintenanceMode
+    maintenanceMode,
+    maintenanceProgress,
+    maintenanceCompletionDate
   });
 }));
 
