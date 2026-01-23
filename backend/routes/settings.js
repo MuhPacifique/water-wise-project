@@ -385,4 +385,69 @@ router.get('/footer', catchAsync(async (req, res, next) => {
   });
 }));
 
+// @desc    Save initiatives take action content
+// @route   POST /api/settings/initiatives-take-action
+// @access  Private (admin only)
+router.post('/initiatives-take-action', protect, authorize('admin'), [
+  body('title').optional().isString().trim(),
+  body('description').optional().isString().trim(),
+  body('volunteer_button_text').optional().isString().trim(),
+  body('donate_button_text').optional().isString().trim(),
+], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
+
+  const content = req.body;
+  const pool = getPool();
+
+  await pool.execute(
+    `INSERT INTO settings (setting_key, setting_value, updated_by, updated_at)
+     VALUES (?, ?, ?, NOW())
+     ON DUPLICATE KEY UPDATE
+     setting_value = VALUES(setting_value),
+     updated_by = VALUES(updated_by),
+     updated_at = NOW()`,
+    ['initiatives_take_action', JSON.stringify(content), req.user.id]
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Initiatives take action content saved successfully'
+  });
+}));
+
+// @desc    Get initiatives take action content
+// @route   GET /api/settings/initiatives-take-action
+// @access  Public
+router.get('/initiatives-take-action', catchAsync(async (req, res, next) => {
+  const pool = getPool();
+
+  const [settings] = await pool.execute(
+    'SELECT setting_value FROM settings WHERE setting_key = ?',
+    ['initiatives_take_action']
+  );
+
+  let takeActionContent = {
+    title: "Take Action",
+    description: "Be part of the solution. Every small action counts towards protecting our water resources.",
+    volunteer_button_text: "Volunteer with Us",
+    donate_button_text: "Donate to this Cause"
+  };
+
+  if (settings.length > 0) {
+    try {
+      takeActionContent = { ...takeActionContent, ...JSON.parse(settings[0].setting_value) };
+    } catch (error) {
+      console.error('Error parsing initiatives take action content:', error);
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    data: takeActionContent
+  });
+}));
+
 module.exports = router;

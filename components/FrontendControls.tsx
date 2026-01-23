@@ -10,9 +10,10 @@ import {
   AlertCircle,
   Moon,
   Sun,
-  Plus
+  Plus,
+  MessageSquare
 } from 'lucide-react';
-import { ProblemContent, FooterContent } from '../types';
+import { ProblemContent, FooterContent, TakeActionContent } from '../types';
 
 interface FrontendSettings {
   showHero: boolean;
@@ -72,10 +73,17 @@ const FrontendControls: React.FC = () => {
     programs: [],
     copyright_text: '',
   });
+  const [takeActionContent, setTakeActionContent] = useState<TakeActionContent>({
+    title: '',
+    description: '',
+    volunteer_button_text: '',
+    donate_button_text: '',
+  });
   const [saved, setSaved] = useState(false);
   const [contentSaved, setContentSaved] = useState(false);
   const [problemContentSaved, setProblemContentSaved] = useState(false);
   const [footerSaved, setFooterSaved] = useState(false);
+  const [takeActionSaved, setTakeActionSaved] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +91,7 @@ const FrontendControls: React.FC = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const [settingsRes, contentRes, problemContentRes, footerRes] = await Promise.all([
+        const [settingsRes, contentRes, problemContentRes, footerRes, takeActionRes] = await Promise.all([
           fetch('/api/settings/frontend', {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -94,6 +102,9 @@ const FrontendControls: React.FC = () => {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch('/api/settings/footer', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/settings/initiatives-take-action', {
             headers: { Authorization: `Bearer ${token}` },
           })
         ]);
@@ -116,6 +127,11 @@ const FrontendControls: React.FC = () => {
         if (footerRes.ok) {
           const data = await footerRes.json();
           setFooterContent(data.data);
+        }
+
+        if (takeActionRes.ok) {
+          const data = await takeActionRes.json();
+          setTakeActionContent(data.data);
         }
       } catch (err) {
         console.error('Error fetching settings:', err);
@@ -241,6 +257,31 @@ const FrontendControls: React.FC = () => {
       }
     } catch (err) {
       setError('Error saving footer content');
+      console.error('Save error:', err);
+    }
+  };
+
+  const handleTakeActionSave = async () => {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/settings/initiatives-take-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(takeActionContent),
+      });
+
+      if (response.ok) {
+        setTakeActionSaved(true);
+        setTimeout(() => setTakeActionSaved(false), 3000);
+      } else {
+        setError('Failed to save take action content');
+      }
+    } catch (err) {
+      setError('Error saving take action content');
       console.error('Save error:', err);
     }
   };
@@ -651,6 +692,80 @@ const FrontendControls: React.FC = () => {
             </button>
             {footerSaved && (
               <span className="text-green-600 font-medium">✓ Footer content saved!</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Initiatives Take Action Content Management */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
+          <Settings size={20} />
+          Initiatives "Take Action" Management
+        </h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Section Title
+            </label>
+            <input
+              type="text"
+              value={takeActionContent.title}
+              onChange={(e) => setTakeActionContent({ ...takeActionContent, title: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+              placeholder="Take Action"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Description
+            </label>
+            <textarea
+              value={takeActionContent.description}
+              onChange={(e) => setTakeActionContent({ ...takeActionContent, description: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              placeholder="Be part of the solution..."
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Volunteer Button Text
+              </label>
+              <input
+                type="text"
+                value={takeActionContent.volunteer_button_text}
+                onChange={(e) => setTakeActionContent({ ...takeActionContent, volunteer_button_text: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="Volunteer with Us"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Donate Button Text
+              </label>
+              <input
+                type="text"
+                value={takeActionContent.donate_button_text}
+                onChange={(e) => setTakeActionContent({ ...takeActionContent, donate_button_text: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="Donate to this Cause"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={handleTakeActionSave}
+              className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-all flex items-center gap-2"
+            >
+              <Save size={18} />
+              Save Take Action Content
+            </button>
+            {takeActionSaved && (
+              <span className="text-green-600 font-medium">✓ Take Action content saved!</span>
             )}
           </div>
         </div>

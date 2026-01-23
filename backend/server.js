@@ -30,6 +30,7 @@ const analyticsRoutes = require('./routes/analytics');
 const consultationRoutes = require('./routes/consultation');
 const teamRoutes = require('./routes/team');
 const initiativeRoutes = require('./routes/initiatives');
+const actionRoutes = require('./routes/actions');
 
 // Initialize express
 const app = express();
@@ -73,6 +74,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/consultation', consultationRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/initiatives', initiativeRoutes);
+app.use('/api/actions', actionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

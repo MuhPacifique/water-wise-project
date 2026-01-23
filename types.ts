@@ -54,3 +54,10 @@ export interface FooterContent {
   programs: string[];
   copyright_text: string;
 }
+
+export interface TakeActionContent {
+  title: string;
+  description: string;
+  volunteer_button_text: string;
+  donate_button_text: string;
+}

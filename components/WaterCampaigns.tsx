@@ -5,6 +5,7 @@ import { Megaphone, MapPin, Calendar, Users, Home, ArrowRight, ShieldCheck, Targ
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { LANGUAGES } from '../constants';
 import Navbar from './Navbar';
 import Footer from './Footer';
 

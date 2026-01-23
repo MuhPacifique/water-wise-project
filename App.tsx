@@ -15,6 +15,8 @@ import WaterCampaigns from './components/WaterCampaigns';
 import CampaignDetails from './components/CampaignDetails';
 import JoinCampaign from './components/JoinCampaign';
 import InitiativeDetails from './components/InitiativeDetails';
+import VolunteerPage from './components/VolunteerPage';
+import DonatePage from './components/DonatePage';
 
 const App: React.FC = () => {
   return (
@@ -35,6 +37,8 @@ const App: React.FC = () => {
                 <Route path="/join-campaign/:id" element={<JoinCampaign />} />
                 <Route path="/campaign-details/:id" element={<CampaignDetails />} />
                 <Route path="/initiative/:id" element={<InitiativeDetails />} />
+                <Route path="/volunteer" element={<VolunteerPage />} />
+                <Route path="/donate" element={<DonatePage />} />
               </Routes>
             </ThemeProvider>
           </ContentProvider>

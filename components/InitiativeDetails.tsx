@@ -14,6 +14,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
 import { LANGUAGES } from '../constants';
+import { TakeActionContent } from '../types';
 
 const InitiativeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,25 +22,69 @@ const InitiativeDetails: React.FC = () => {
   const { language, isTranslating } = useTranslation();
   
   const [initiative, setInitiative] = useState<any>(null);
+  const [takeActionContent, setTakeActionContent] = useState<TakeActionContent>({
+    title: "Take Action",
+    description: "Be part of the solution. Every small action counts towards protecting our water resources.",
+    volunteer_button_text: "Volunteer with Us",
+    donate_button_text: "Donate to this Cause"
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isSupported, setIsSupported] = useState(false);
+  const [showShareSuccess, setShowShareSuccess] = useState(false);
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: initiative.title,
+          text: initiative.description,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setShowShareSuccess(true);
+        setTimeout(() => setShowShareSuccess(false), 3000);
+      } catch (err) {
+        console.error('Error copying to clipboard:', err);
+      }
+    }
+  };
+
+  const handleSupport = () => {
+    setIsSupported(true);
+    // In a real app, this would hit a backend endpoint
+    setTimeout(() => setIsSupported(false), 3000);
+  };
 
   useEffect(() => {
     const fetchInitiative = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/initiatives/${id}`);
+        const [initiativeRes, takeActionRes] = await Promise.all([
+          fetch(`/api/initiatives/${id}`),
+          fetch('/api/settings/initiatives-take-action')
+        ]);
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!initiativeRes.ok) {
+          throw new Error(`HTTP error! status: ${initiativeRes.status}`);
         }
         
-        const data = await response.json();
+        const initiativeData = await initiativeRes.json();
         
-        if (data.success) {
-          setInitiative(data.data);
+        if (initiativeData.success) {
+          setInitiative(initiativeData.data);
         } else {
-          setError(data.message || 'Initiative not found');
+          setError(initiativeData.message || 'Initiative not found');
+        }
+
+        if (takeActionRes.ok) {
+          const takeActionData = await takeActionRes.json();
+          setTakeActionContent(takeActionData.data);
         }
       } catch (err) {
         console.error('Fetch initiative error:', err);
@@ -132,28 +177,42 @@ const InitiativeDetails: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl shadow-blue-900/20 sticky top-24"
             >
-              <h3 className="text-2xl font-black mb-6"><TranslatableText text="Take Action" /></h3>
+              <h3 className="text-2xl font-black mb-6"><TranslatableText text={takeActionContent.title} /></h3>
               <p className="text-slate-300 mb-8 font-medium">
-                <TranslatableText text="Be part of the solution. Every small action counts towards protecting our water resources." />
+                <TranslatableText text={takeActionContent.description} />
               </p>
               
               <div className="space-y-4">
-                <button className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-700/20">
-                  <TranslatableText text="Volunteer with Us" />
+                <button 
+                  onClick={() => navigate('/volunteer')}
+                  className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-700/20"
+                >
+                  <TranslatableText text={takeActionContent.volunteer_button_text} />
                 </button>
-                <button className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/10">
-                  <TranslatableText text="Donate to this Cause" />
+                <button 
+                  onClick={() => navigate('/donate')}
+                  className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/10"
+                >
+                  <TranslatableText text={takeActionContent.donate_button_text} />
                 </button>
               </div>
 
-              <div className="flex grid grid-cols-2 gap-4 mt-8">
-                <button className="flex items-center justify-center gap-2 py-3 bg-white/5 rounded-xl font-bold text-xs hover:bg-white/10 transition-all">
+              <div className="flex grid grid-cols-2 gap-4 mt-8 relative">
+                <button 
+                  onClick={handleShare}
+                  className="flex items-center justify-center gap-2 py-3 bg-white/5 rounded-xl font-bold text-xs hover:bg-white/10 transition-all"
+                >
                   <Share2 size={14} />
-                  <TranslatableText text="Share" />
+                  <TranslatableText text={showShareSuccess ? "Copied!" : "Share"} />
                 </button>
-                <button className="flex items-center justify-center gap-2 py-3 bg-white/5 rounded-xl font-bold text-xs hover:bg-white/10 transition-all">
-                  <Heart size={14} />
-                  <TranslatableText text="Support" />
+                <button 
+                  onClick={handleSupport}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs transition-all ${
+                    isSupported ? 'bg-red-500 text-white' : 'bg-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  <Heart size={14} className={isSupported ? 'fill-current' : ''} />
+                  <TranslatableText text={isSupported ? "Thanks!" : "Support"} />
                 </button>
               </div>
             </motion.div>
