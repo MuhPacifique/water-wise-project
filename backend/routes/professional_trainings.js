@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { body, param, query, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -41,6 +41,10 @@ router.get('/', optionalAuth, [
   query('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']),
   query('language').optional().isLength({ min: 2, max: 10 })
 ], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
   const { page = 1, limit = 12, category, difficulty, language = 'en' } = req.query;
   const pool = getPool();
   const offset = (page - 1) * limit;
@@ -96,6 +100,10 @@ router.get('/', optionalAuth, [
 router.get('/:id', optionalAuth, [
   param('id').isInt({ min: 1 })
 ], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
   const { id } = req.params;
   const pool = getPool();
 
@@ -105,10 +113,7 @@ router.get('/:id', optionalAuth, [
   );
 
   if (trainings.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Training not found'
-    });
+    return next(new AppError('Training not found', 404));
   }
 
   res.status(200).json({
@@ -134,7 +139,7 @@ router.post('/', protect, authorize('admin', 'moderator'), upload.fields([
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   let { title, description, document_url, thumbnail_url, category, difficulty, language = 'en' } = req.body;
@@ -150,7 +155,7 @@ router.post('/', protect, authorize('admin', 'moderator'), upload.fields([
   }
 
   if (!document_url) {
-    return res.status(400).json({ success: false, message: 'Document file or URL is required' });
+    return next(new AppError('Document file or URL is required', 400));
   }
 
   const [result] = await pool.execute(
@@ -183,12 +188,16 @@ router.put('/:id', protect, authorize('admin', 'moderator'), upload.fields([
   body('language').optional().isLength({ min: 2, max: 10 }),
   body('is_active').optional().isBoolean().toBoolean()
 ], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
   const { id } = req.params;
   const pool = getPool();
 
   const [existing] = await pool.execute('SELECT * FROM professional_trainings WHERE id = ?', [id]);
   if (existing.length === 0) {
-    return res.status(404).json({ success: false, message: 'Training not found' });
+    return next(new AppError('Training not found', 404));
   }
 
   const fields = ['title', 'description', 'document_url', 'thumbnail_url', 'category', 'difficulty', 'language', 'is_active'];
@@ -220,7 +229,7 @@ router.put('/:id', protect, authorize('admin', 'moderator'), upload.fields([
   });
 
   if (updates.length === 0) {
-    return res.status(400).json({ success: false, message: 'No fields to update' });
+    return next(new AppError('No fields to update', 400));
   }
 
   values.push(id);
@@ -238,12 +247,16 @@ router.put('/:id', protect, authorize('admin', 'moderator'), upload.fields([
 router.delete('/:id', protect, authorize('admin', 'moderator'), [
   param('id').isInt({ min: 1 })
 ], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
   const { id } = req.params;
   const pool = getPool();
 
   const [existing] = await pool.execute('SELECT * FROM professional_trainings WHERE id = ?', [id]);
   if (existing.length === 0) {
-    return res.status(404).json({ success: false, message: 'Training not found' });
+    return next(new AppError('Training not found', 404));
   }
 
   if (existing[0].document_url && existing[0].document_url.startsWith('/uploads/')) {

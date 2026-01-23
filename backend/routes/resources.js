@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { body, param, query, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -74,6 +74,11 @@ router.get('/admin', protect, authorize('admin', 'moderator'), [
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('includeDeleted').optional().isBoolean()
 ], catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
+
   const { page = 1, limit = 50, includeDeleted = 'false' } = req.query;
   const pool = getPool();
   const offset = (page - 1) * limit;
@@ -129,15 +134,6 @@ router.get('/', optionalAuth, [
   query('search').optional().isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
   query('featured').optional().isBoolean().withMessage('Featured must be a boolean')
 ], catchAsync(async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
-  }
-
   const {
     page = 1,
     limit = 12,
@@ -147,6 +143,11 @@ router.get('/', optionalAuth, [
     search,
     featured
   } = req.query;
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError('Validation failed', 400, errors.array()));
+  }
 
   const pool = getPool();
   const offset = (page - 1) * limit;
@@ -231,11 +232,7 @@ router.get('/:id', optionalAuth, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -254,10 +251,7 @@ router.get('/:id', optionalAuth, [
   `, [language, id, true]);
 
   if (resources.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Resource not found'
-    });
+    return next(new AppError('Resource not found', 404));
   }
 
   const resource = resources[0];
@@ -305,18 +299,12 @@ router.post('/', protect, (req, res, next) => {
 
   uploadFields(req, res, (err) => {
     if (err) {
-      return res.status(400).json({
-        success: false,
-        message: err.message
-      });
+      return next(new AppError(err.message, 400));
     }
 
     // Validate that file is provided for non-link resources
     if (!req.files.file && req.body.type !== 'link') {
-      return res.status(400).json({
-        success: false,
-        message: 'File is required for document, video, and image resources'
-      });
+      return next(new AppError('File is required for document, video, and image resources', 400));
     }
 
     next();
@@ -333,18 +321,11 @@ router.post('/', protect, (req, res, next) => {
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   if (!req.files.file && req.body.type !== 'link') {
-    return res.status(400).json({
-      success: false,
-      message: 'File is required for document, video, and image resources'
-    });
+    return next(new AppError('File is required for document, video, and image resources', 400));
   }
 
   const {
@@ -448,10 +429,7 @@ router.put('/:id', protect, (req, res, next) => {
 
   uploadFields(req, res, (err) => {
     if (err) {
-      return res.status(400).json({
-        success: false,
-        message: err.message
-      });
+      return next(new AppError(err.message, 400));
     }
     next();
   });
@@ -471,11 +449,7 @@ router.put('/:id', protect, (req, res, next) => {
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -489,20 +463,14 @@ router.put('/:id', protect, (req, res, next) => {
   );
 
   if (resources.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Resource not found'
-    });
+    return next(new AppError('Resource not found', 404));
   }
 
   const resource = resources[0];
 
   // Check ownership or admin role
   if (resource.uploaded_by !== req.user.id && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to update this resource'
-    });
+    return next(new AppError('Not authorized to update this resource', 403));
   }
 
   // Build update query
@@ -596,10 +564,7 @@ router.put('/:id', protect, (req, res, next) => {
   }
 
   if (updateFields.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'No valid fields to update'
-    });
+    return next(new AppError('No valid fields to update', 400));
   }
 
   updateValues.push(id);
@@ -636,11 +601,7 @@ router.delete('/:id', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -653,20 +614,14 @@ router.delete('/:id', protect, [
   );
 
   if (resources.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Resource not found'
-    });
+    return next(new AppError('Resource not found', 404));
   }
 
   const resource = resources[0];
 
   // Check ownership or admin role
   if (resource.uploaded_by !== req.user.id && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to delete this resource'
-    });
+    return next(new AppError('Not authorized to delete this resource', 403));
   }
 
   // Perform soft delete
@@ -692,11 +647,7 @@ router.post('/:id/restore', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -709,10 +660,7 @@ router.post('/:id/restore', protect, authorize('admin'), [
   );
 
   if (resources.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Resource not found'
-    });
+    return next(new AppError('Resource not found', 404));
   }
 
   const resource = resources[0];
@@ -740,11 +688,7 @@ router.get('/:id/download', optionalAuth, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -757,19 +701,13 @@ router.get('/:id/download', optionalAuth, [
   );
 
   if (resources.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Resource not found'
-    });
+    return next(new AppError('Resource not found', 404));
   }
 
   const resource = resources[0];
 
   if (!resource.file_path || !fs.existsSync(resource.file_path)) {
-    return res.status(404).json({
-      success: false,
-      message: 'File not found'
-    });
+    return next(new AppError('File not found', 404));
   }
 
   // Increment download count
@@ -798,11 +736,7 @@ router.get('/:id/view', optionalAuth, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -815,27 +749,18 @@ router.get('/:id/view', optionalAuth, [
   );
 
   if (resources.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Resource not found'
-    });
+    return next(new AppError('Resource not found', 404));
   }
 
   const resource = resources[0];
 
   // Check if resource is public or user is owner/admin
   if (!resource.is_public && (!req.user || (resource.uploaded_by !== req.user.id && req.user.role !== 'admin'))) {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to view this resource'
-    });
+    return next(new AppError('Not authorized to view this resource', 403));
   }
 
   if (!resource.file_path || !fs.existsSync(resource.file_path)) {
-    return res.status(404).json({
-      success: false,
-      message: 'File not found on server'
-    });
+    return next(new AppError('File not found on server', 404));
   }
 
   // Increment view count

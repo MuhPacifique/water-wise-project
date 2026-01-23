@@ -1,15 +1,17 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Activity as ActivityType } from '../types';
 
 interface ActivitiesSectionProps {
   TranslatableText: React.FC<{ text: string }>;
-  activities: ActivityType[];
+  activities: (ActivityType & { id?: number })[];
 }
 
 const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({ TranslatableText, activities }) => {
+  const navigate = useNavigate();
   return (
-    <section className="py-20 bg-white">
+    <section id="activities" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
@@ -32,7 +34,13 @@ const ActivitiesSection: React.FC<ActivitiesSectionProps> = ({ TranslatableText,
                   <TranslatableText text={activity.description} />
                 </p>
                 <div className="mt-8 pt-6 border-t border-slate-100">
-                  <button className="text-blue-600 font-bold text-sm flex items-center gap-2 hover:gap-3 transition-all">
+                  <button 
+                    onClick={() => {
+                      const initiativeId = activity.id !== undefined ? activity.id : (idx + 1);
+                      navigate(`/initiative/${initiativeId}`);
+                    }}
+                    className="text-blue-600 font-bold text-sm flex items-center gap-2 hover:gap-3 transition-all"
+                  >
                     <TranslatableText text="Learn More" /> →
                   </button>
                 </div>

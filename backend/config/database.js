@@ -10,7 +10,21 @@ const initializeDatabase = async () => {
     database: process.env.DB_NAME || 'water_wise_db',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
+    idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+  });
+
+  pool.on('error', (err) => {
+    console.error('Unexpected error on idle database connection', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+      console.log('Database connection lost. Attempting to reconnect...');
+      // The pool handles reconnection automatically for new requests
+    } else {
+      process.exit(-1);
+    }
   });
 
   // Test connection

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -17,11 +17,7 @@ router.post('/track', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { eventType, eventData = {}, pageUrl, referrer } = req.body;
@@ -61,11 +57,7 @@ router.get('/user/:userId', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { userId } = req.params;
@@ -74,10 +66,7 @@ router.get('/user/:userId', protect, [
 
   // Check permissions
   if (req.user.id !== parseInt(userId) && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to access this user analytics'
-    });
+    return next(new AppError('Not authorized to access this user analytics', 403));
   }
 
   const offset = (page - 1) * limit;
@@ -141,11 +130,7 @@ router.get('/site', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { days = 30, eventType } = req.query;
@@ -240,11 +225,7 @@ router.get('/resources', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { days = 30 } = req.query;
@@ -316,11 +297,7 @@ router.get('/engagement', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { days = 30 } = req.query;
@@ -460,11 +437,7 @@ router.get('/tables/:tableName/schema', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { tableName } = req.params;
@@ -499,11 +472,7 @@ router.get('/tables/:tableName', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { tableName } = req.params;
@@ -546,11 +515,7 @@ router.put('/tables/:tableName/:id', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { tableName, id } = req.params;
@@ -562,10 +527,7 @@ router.put('/tables/:tableName/:id', protect, authorize('admin'), [
   const primaryKey = columns.find(col => col.Key === 'PRI');
 
   if (!primaryKey) {
-    return res.status(400).json({
-      success: false,
-      message: 'Table does not have a primary key'
-    });
+    return next(new AppError('Table does not have a primary key', 400));
   }
 
   // Convert data types based on column schema
@@ -579,29 +541,20 @@ router.put('/tables/:tableName/:id', protect, authorize('admin'), [
       } else if (columnType.includes('int') || columnType.includes('tinyint') || columnType.includes('smallint') || columnType.includes('mediumint') || columnType.includes('bigint')) {
         const numValue = parseInt(value);
         if (isNaN(numValue)) {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid integer value for column '${key}': ${value}`
-          });
+          return next(new AppError(`Invalid integer value for column '${key}': ${value}`, 400));
         }
         convertedData[key] = numValue;
       } else if (columnType.includes('decimal') || columnType.includes('float') || columnType.includes('double')) {
         const numValue = parseFloat(value);
         if (isNaN(numValue)) {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid numeric value for column '${key}': ${value}`
-          });
+          return next(new AppError(`Invalid numeric value for column '${key}': ${value}`, 400));
         }
         convertedData[key] = numValue;
       } else if (columnType.includes('json')) {
         try {
           convertedData[key] = typeof value === 'string' ? JSON.parse(value) : value;
         } catch (e) {
-          return res.status(400).json({
-            success: false,
-            message: `Invalid JSON value for column '${key}': ${value}`
-          });
+          return next(new AppError(`Invalid JSON value for column '${key}': ${value}`, 400));
         }
       } else if (columnType.includes('tinyint(1)') || columnType.includes('boolean')) {
         convertedData[key] = value === 'true' || value === '1' || value === 1 || value === true ? 1 : 0;
@@ -625,10 +578,7 @@ router.put('/tables/:tableName/:id', protect, authorize('admin'), [
   const [result] = await pool.execute(`UPDATE \`${tableName}\` SET ${setClause} WHERE \`${primaryKey.Field}\` = ?`, [...values, id]);
 
   if (result.affectedRows === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Record not found'
-    });
+    return next(new AppError('Record not found', 404));
   }
 
   res.status(200).json({
@@ -646,11 +596,7 @@ router.delete('/tables/:tableName/:id', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { tableName, id } = req.params;
@@ -661,10 +607,7 @@ router.delete('/tables/:tableName/:id', protect, authorize('admin'), [
   const primaryKey = columns.find(col => col.Key === 'PRI');
 
   if (!primaryKey) {
-    return res.status(400).json({
-      success: false,
-      message: 'Table does not have a primary key'
-    });
+    return next(new AppError('Table does not have a primary key', 400));
   }
 
   // If deleting from analytics table, handle resource count updates
@@ -691,10 +634,7 @@ router.delete('/tables/:tableName/:id', protect, authorize('admin'), [
   const [result] = await pool.execute(`DELETE FROM \`${tableName}\` WHERE \`${primaryKey.Field}\` = ?`, [id]);
 
   if (result.affectedRows === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Record not found'
-    });
+    return next(new AppError('Record not found', 404));
   }
 
   res.status(200).json({
@@ -712,11 +652,7 @@ router.post('/tables/:tableName', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { tableName } = req.params;

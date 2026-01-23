@@ -5,16 +5,16 @@ import { useNavigate } from 'react-router-dom';
 import { googleTranslateService } from '../services/gemini';
 import { Language } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { LANGUAGES } from '../constants';
 import VideoModal from './VideoModal';
-
-// Simple TranslatableText component for EducationalVideos
-const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  return <span>{text}</span>;
-};
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 const EducationalVideos: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language, isTranslating } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [videos, setVideos] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -106,12 +106,14 @@ const EducationalVideos: React.FC = () => {
   };
 
   return (
-    <motion.div
-      className="min-h-screen bg-slate-50 py-24"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
+      <motion.div
+        className="py-24"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-start mb-4">
           <motion.button
@@ -255,7 +257,7 @@ const EducationalVideos: React.FC = () => {
                           className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-lg"
                         >
                           <Star size={10} fill="currentColor" />
-                          FEATURED
+                          <TranslatableText text="FEATURED" />
                         </motion.div>
                       ) : null}
                     </div>
@@ -326,6 +328,27 @@ const EducationalVideos: React.FC = () => {
           </motion.div>
         )}
       </div>
+      </motion.div>
+      <Footer TranslatableText={TranslatableText} />
+
+      {/* Global Loading Spinner for Translations */}
+      {isTranslating && (
+        <motion.div
+          className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </div>
+          <span className="text-sm font-bold text-blue-700 tracking-tight">
+            Translating to {LANGUAGES.find(l => l.code === language)?.nativeName}...
+          </span>
+        </motion.div>
+      )}
 
       {/* Video Modal */}
       {selectedVideo && (
@@ -338,7 +361,7 @@ const EducationalVideos: React.FC = () => {
           poster={selectedVideo.thumbnail_url}
         />
       )}
-    </motion.div>
+    </div>
   );
 };
 

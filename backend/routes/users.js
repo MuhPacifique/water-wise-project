@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body, param, query, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -19,11 +19,7 @@ router.get('/', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { page = 1, limit = 20, role, active, search } = req.query;
@@ -91,11 +87,7 @@ router.get('/:id', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -103,10 +95,7 @@ router.get('/:id', protect, [
 
   // Check if user can access this profile
   if (req.user.id !== parseInt(id) && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to access this user profile'
-    });
+    return next(new AppError('Not authorized to access this user profile', 403));
   }
 
   // Get user with profile
@@ -120,10 +109,7 @@ router.get('/:id', protect, [
   `, [id]);
 
   if (users.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found'
-    });
+    return next(new AppError('User not found', 404));
   }
 
   const user = users[0];
@@ -155,11 +141,7 @@ router.put('/:id', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -168,18 +150,12 @@ router.put('/:id', protect, [
 
   // Check permissions
   if (req.user.id !== parseInt(id) && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to update this user'
-    });
+    return next(new AppError('Not authorized to update this user', 403));
   }
 
   // Only admins can change role and active status
   if ((role || isActive !== undefined) && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to change role or active status'
-    });
+    return next(new AppError('Not authorized to change role or active status', 403));
   }
 
   // Build update query for users table
@@ -252,11 +228,7 @@ router.delete('/:id', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -269,20 +241,14 @@ router.delete('/:id', protect, authorize('admin'), [
   );
 
   if (users.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found'
-    });
+    return next(new AppError('User not found', 404));
   }
 
   const user = users[0];
 
   // Prevent deleting admin users
   if (user.role === 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Cannot delete admin users'
-    });
+    return next(new AppError('Cannot delete admin users', 403));
   }
 
   // Soft delete by deactivating
@@ -311,11 +277,7 @@ router.get('/:id/profile', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -323,10 +285,7 @@ router.get('/:id/profile', protect, [
 
   // Check permissions
   if (req.user.id !== parseInt(id) && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to access this user profile'
-    });
+    return next(new AppError('Not authorized to access this user profile', 403));
   }
 
   // Get user profile
@@ -364,11 +323,7 @@ router.put('/:id/profile', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -377,10 +332,7 @@ router.put('/:id/profile', protect, [
 
   // Check ownership
   if (req.user.id !== parseInt(id)) {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to update this user profile'
-    });
+    return next(new AppError('Not authorized to update this user profile', 403));
   }
 
   // Check if profile exists
@@ -454,11 +406,7 @@ router.get('/:id/activity', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;

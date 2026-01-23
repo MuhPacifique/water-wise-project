@@ -4,14 +4,14 @@ import { motion } from 'framer-motion';
 import { Megaphone, MapPin, Calendar, Users, Home, ArrowRight, ShieldCheck, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  return <span>{text}</span>;
-};
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 const WaterCampaigns: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language, isTranslating } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<any[]>([]);
 
@@ -87,12 +87,14 @@ const WaterCampaigns: React.FC = () => {
   };
 
   return (
-    <motion.div
-      className="min-h-screen bg-white py-24"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <motion.div
+        className="py-24"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-start mb-4">
           <motion.button
@@ -156,7 +158,7 @@ const WaterCampaigns: React.FC = () => {
                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
                       campaign.status === 'Ongoing' ? 'bg-green-500 text-white' : 'bg-blue-600 text-white'
                     } shadow-lg`}>
-                      {campaign.status}
+                      <TranslatableText text={campaign.status} />
                     </span>
                   </div>
                 </div>
@@ -164,21 +166,21 @@ const WaterCampaigns: React.FC = () => {
                 <div className="p-8 flex-1 flex flex-col">
                   <div className="flex items-center gap-2 text-blue-600 text-[10px] font-black uppercase tracking-widest mb-4">
                     <MapPin size={12} />
-                    {campaign.location}
+                    <TranslatableText text={campaign.location} />
                   </div>
                   
                   <h3 className="text-xl font-bold text-slate-900 mb-4 line-clamp-2 leading-tight">
-                    {campaign.title}
+                    <TranslatableText text={campaign.title} />
                   </h3>
                   
                   <div className="space-y-3 mb-8 flex-1">
                     <div className="flex items-center gap-3 text-sm text-slate-500">
                       <Calendar size={16} className="text-slate-400" />
-                      {campaign.date}
+                      <TranslatableText text={campaign.date} />
                     </div>
                     <div className="flex items-center gap-3 text-sm text-slate-500">
                       <Users size={16} className="text-slate-400" />
-                      {campaign.participants}+ Participants
+                      {campaign.participants}+ <TranslatableText text="Participants" />
                     </div>
                   </div>
                   
@@ -200,9 +202,9 @@ const WaterCampaigns: React.FC = () => {
               <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6">
                 <ShieldCheck size={32} className="text-slate-900" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Start a Local Campaign</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2"><TranslatableText text="Start a Local Campaign" /></h3>
               <p className="text-slate-600 max-w-lg mx-auto mb-8 font-medium">
-                Want to organize a water conservation awareness program in your rural community? We provide tools, resources, and guidance.
+                <TranslatableText text="Want to organize a water conservation awareness program in your rural community? We provide tools, resources, and guidance." />
               </p>
               <button className="px-10 py-4 border-2 border-slate-900 text-slate-900 font-black rounded-2xl hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2 mx-auto">
                 <Target size={18} />
@@ -212,7 +214,28 @@ const WaterCampaigns: React.FC = () => {
           </div>
         )}
       </div>
-    </motion.div>
+      </motion.div>
+      <Footer TranslatableText={TranslatableText} />
+
+      {/* Global Loading Spinner for Translations */}
+      {isTranslating && (
+        <motion.div
+          className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </div>
+          <span className="text-sm font-bold text-blue-700 tracking-tight">
+            Translating to {LANGUAGES.find(l => l.code === language)?.nativeName}...
+          </span>
+        </motion.div>
+      )}
+    </div>
   );
 };
 

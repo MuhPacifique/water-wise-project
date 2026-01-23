@@ -12,18 +12,20 @@ import {
   Clock, 
   AlertCircle,
   Share2,
-  Heart
+  Heart,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-
-const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  return <span>{text}</span>;
-};
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { LANGUAGES } from '../constants';
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 const CampaignDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language, isTranslating } = useTranslation();
   
   const [campaign, setCampaign] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,8 +118,9 @@ const CampaignDetails: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <Navbar />
       {/* Header Image Section */}
-      <div className="relative h-[40vh] md:h-[50vh] overflow-hidden">
+      <div className="relative h-[40vh] md:h-[50vh] overflow-hidden pt-20">
         <img 
           src={campaign.image_url || 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&q=80'} 
           alt={campaign.title}
@@ -161,21 +164,21 @@ const CampaignDetails: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-[2rem] p-8 md:p-10 shadow-sm border border-slate-100"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">About this Campaign</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-6"><TranslatableText text="About this Campaign" /></h2>
               <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed space-y-4">
                 <p>
-                  Join us for the {campaign.title} in {campaign.location}. This campaign is dedicated to increasing awareness about water conservation and sustainable management in rural areas.
+                  <TranslatableText text={`Join us for the ${campaign.title} in ${campaign.location}. This campaign is dedicated to increasing awareness about water conservation and sustainable management in rural areas.`} />
                 </p>
                 <p>
-                  We believe that community-driven initiatives are the key to protecting our most precious resource. By participating, you help us spread knowledge, implement practical solutions, and build a more water-wise future for everyone.
+                  <TranslatableText text="We believe that community-driven initiatives are the key to protecting our most precious resource. By participating, you help us spread knowledge, implement practical solutions, and build a more water-wise future for everyone." />
                 </p>
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-2xl my-8">
-                  <h4 className="text-blue-900 font-bold mb-2">Campaign Goals:</h4>
+                  <h4 className="text-blue-900 font-bold mb-2"><TranslatableText text="Campaign Goals:" /></h4>
                   <ul className="list-disc list-inside text-blue-800 space-y-2">
-                    <li>Educational workshops for local schools</li>
-                    <li>Community water source restoration</li>
-                    <li>Sustainable irrigation demonstrations</li>
-                    <li>Waste management near water bodies</li>
+                    <li><TranslatableText text="Educational workshops for local schools" /></li>
+                    <li><TranslatableText text="Community water source restoration" /></li>
+                    <li><TranslatableText text="Sustainable irrigation demonstrations" /></li>
+                    <li><TranslatableText text="Waste management near water bodies" /></li>
                   </ul>
                 </div>
               </div>
@@ -187,8 +190,8 @@ const CampaignDetails: React.FC = () => {
                   <Calendar size={24} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date & Time</p>
-                  <p className="font-bold text-slate-900">{campaign.date || 'TBA'}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest"><TranslatableText text="Date & Time" /></p>
+                  <p className="font-bold text-slate-900">{campaign.date || <TranslatableText text="TBA" />}</p>
                 </div>
               </div>
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
@@ -196,8 +199,8 @@ const CampaignDetails: React.FC = () => {
                   <Users size={24} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Participants</p>
-                  <p className="font-bold text-slate-900">{campaign.participants || 0} People Joined</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest"><TranslatableText text="Participants" /></p>
+                  <p className="font-bold text-slate-900">{campaign.participants || 0} <TranslatableText text="People Joined" /></p>
                 </div>
               </div>
             </div>
@@ -212,7 +215,7 @@ const CampaignDetails: React.FC = () => {
             >
               <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
                 <Megaphone className="text-blue-400" />
-                Join Now
+                <TranslatableText text="Join Now" />
               </h3>
               
               <div className="space-y-6 mb-8">
@@ -220,27 +223,27 @@ const CampaignDetails: React.FC = () => {
                   <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                     <CheckCircle2 size={14} className="text-blue-400" />
                   </div>
-                  <p className="text-sm text-slate-300">Get exclusive updates on campaign activities and progress.</p>
+                  <p className="text-sm text-slate-300"><TranslatableText text="Get exclusive updates on campaign activities and progress." /></p>
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                     <CheckCircle2 size={14} className="text-blue-400" />
                   </div>
-                  <p className="text-sm text-slate-300">Connect with other community members and conservationists.</p>
+                  <p className="text-sm text-slate-300"><TranslatableText text="Connect with other community members and conservationists." /></p>
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                     <CheckCircle2 size={14} className="text-blue-400" />
                   </div>
-                  <p className="text-sm text-slate-300">Receive a digital certificate of participation upon completion.</p>
+                  <p className="text-sm text-slate-300"><TranslatableText text="Receive a digital certificate of participation upon completion." /></p>
                 </div>
               </div>
 
               {hasJoined ? (
                 <div className="bg-green-500/20 border border-green-500/50 rounded-2xl p-6 text-center mb-6">
                   <CheckCircle2 size={32} className="text-green-400 mx-auto mb-3" />
-                  <p className="font-bold text-green-100">You've joined this campaign!</p>
-                  <p className="text-xs text-green-200/70 mt-1">We'll notify you about upcoming events.</p>
+                  <p className="font-bold text-green-100"><TranslatableText text="You've joined this campaign!" /></p>
+                  <p className="text-xs text-green-200/70 mt-1"><TranslatableText text="We'll notify you about upcoming events." /></p>
                 </div>
               ) : (
                 <button 
@@ -262,11 +265,11 @@ const CampaignDetails: React.FC = () => {
               <div className="flex grid grid-cols-2 gap-4 mt-6">
                 <button className="flex items-center justify-center gap-2 py-3 bg-white/10 rounded-xl font-bold text-xs hover:bg-white/20 transition-all">
                   <Share2 size={14} />
-                  Share
+                  <TranslatableText text="Share" />
                 </button>
                 <button className="flex items-center justify-center gap-2 py-3 bg-white/10 rounded-xl font-bold text-xs hover:bg-white/20 transition-all">
                   <Heart size={14} />
-                  Support
+                  <TranslatableText text="Support" />
                 </button>
               </div>
             </motion.div>
@@ -275,13 +278,33 @@ const CampaignDetails: React.FC = () => {
               <div className="flex items-center gap-4 text-slate-400">
                 <Clock size={20} />
                 <p className="text-xs font-medium italic">
-                  Last updated: {new Date(campaign.created_at).toLocaleDateString()}
+                  <TranslatableText text="Last updated:" /> {new Date(campaign.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <Footer TranslatableText={TranslatableText} />
+
+      {/* Global Loading Spinner for Translations */}
+      {isTranslating && (
+        <motion.div
+          className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </div>
+          <span className="text-sm font-bold text-blue-700 tracking-tight">
+            Translating to {LANGUAGES.find(l => l.code === language)?.nativeName}...
+          </span>
+        </motion.div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require('axios');
 
 /**
  * Service to handle interactions with Google's Gemini AI
@@ -31,17 +32,71 @@ class GeminiService {
   }
 
   /**
+   * Translates text to a target language
+   * @param {string} text - The text to translate
+   * @param {string} targetLanguage - The language code (e.g., 'sw', 'fr', 'rw')
+   * @param {string} sourceLanguage - Optional source language code
+   * @returns {Promise<string>} - The translated text
+   */
+  async translate(text, targetLanguage, sourceLanguage = 'en') {
+    try {
+      if (!this.apiKey || this.apiKey === 'PLACEHOLDER_API_KEY') {
+        // Fallback to free Google Translate API from backend to avoid CORS
+        try {
+          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLanguage}&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
+          const response = await axios.get(url);
+          if (response.data && response.data[0] && response.data[0][0]) {
+            return response.data[0][0][0];
+          }
+          return text;
+        } catch (fallbackError) {
+          console.error('Fallback Translation Error:', fallbackError);
+          return text;
+        }
+      }
+
+      const languageNames = {
+        'sw': 'Swahili (Kiswahili)',
+        'rw': 'Kinyarwanda',
+        'rn': 'Kirundi',
+        'lg': 'Luganda',
+        'fr': 'French',
+        'en': 'English'
+      };
+
+      const targetLangName = languageNames[targetLanguage] || targetLanguage;
+      const sourceLangName = languageNames[sourceLanguage] || sourceLanguage;
+
+      const prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}. 
+      Only return the translated text without any explanations or additional formatting.
+      
+      Text to translate:
+      ${text}`;
+
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (error) {
+      console.error('Translation Error:', error);
+      return text; // Fallback to original text
+    }
+  }
+
+  /**
    * Generates a response from Gemini based on user input and chat history
    * @param {string} prompt - The user's message
    * @param {Array} history - Previous messages in the conversation
    * @param {string} language - The target language for the response
-   * @returns {Promise<string>} - The AI generated response
+   * @returns {Promise<Object>} - The AI generated response and metadata
    */
   async generateResponse(prompt, history = [], language = 'en') {
     try {
       if (!this.apiKey || this.apiKey === 'PLACEHOLDER_API_KEY') {
         console.warn('Using mock AI response because GEMINI_API_KEY is not set.');
-        return this.getMockResponse(prompt);
+        return {
+          response: this.getMockResponse(prompt),
+          isMock: true
+        };
       }
 
       // Add language instruction to the prompt if it's not English
@@ -66,7 +121,10 @@ class GeminiService {
 
       const result = await chat.sendMessage(finalPrompt);
       const response = await result.response;
-      return response.text();
+      return {
+        response: response.text(),
+        isMock: false
+      };
     } catch (error) {
       console.error('Gemini API Error:', error);
       throw new Error('Failed to generate response from AI specialist');

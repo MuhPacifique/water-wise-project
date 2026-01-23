@@ -50,16 +50,19 @@ export const TEAM: TeamMember[] = [
 
 export const ACTIVITIES: Activity[] = [
   {
+    id: 1,
     title: 'Tree Planting',
     description: 'Planting trees for water resource conservation and ecosystem restoration.',
     icon: '🌳'
   },
   {
+    id: 2,
     title: 'Plastic Collection',
     description: 'Collecting plastics from water bodies to prevent pollution and protect aquatic life.',
     icon: '♻️'
   },
   {
+    id: 3,
     title: 'Agroforestry',
     description: 'Enhancing agroforestry practices to improve soil water retention and rural livelihoods.',
     icon: '🌾'

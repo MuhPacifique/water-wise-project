@@ -1,14 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TranslatableText, useContent } from '../components/Home';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Droplets, AlertTriangle, LogIn, LogOut } from 'lucide-react';
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { useContent } from '../contexts/ContentContext';
+import { LANGUAGES } from '../constants';
+import { Droplets, AlertTriangle, Globe, ChevronDown } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
-  const { site_name } = useContent();
+  const { user } = useAuth();
+  const { siteContent } = useContent();
+  const { site_name } = siteContent;
+  const { language, setLanguage } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
+
+  const isHomePage = location.pathname === '/';
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
+    if (isHomePage) {
+      e.preventDefault();
+      const element = document.querySelector(target);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If not on home page, navigate to home with hash
+      // React Router doesn't always handle hashes well on navigate, 
+      // but standard href will work if we prefix with /
+    }
+  };
+
+  const handleLogoClick = () => {
+    if (isHomePage) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate('/');
+    }
+  };
 
   const logoVariants = {
     initial: { scale: 1 },
@@ -44,7 +75,7 @@ const Navbar = () => {
         <div className="flex justify-between h-20 items-center">
           <motion.div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+            onClick={handleLogoClick}
             variants={logoVariants}
             initial="initial"
             whileHover="hover"
@@ -72,7 +103,8 @@ const Navbar = () => {
               transition={{ delay: 0.3, duration: 0.5 }}
             >
               <motion.a
-                href="#problem"
+                href="/#problem"
+                onClick={(e) => handleNavClick(e, '#problem')}
                 className="hover:text-blue-600 transition-colors cursor-pointer"
                 variants={navItemVariants}
                 whileHover="hover"
@@ -80,7 +112,8 @@ const Navbar = () => {
                 <TranslatableText text="Problem" />
               </motion.a>
               <motion.a
-                href="#solutions"
+                href="/#solutions"
+                onClick={(e) => handleNavClick(e, '#solutions')}
                 className="hover:text-blue-600 transition-colors cursor-pointer"
                 variants={navItemVariants}
                 whileHover="hover"
@@ -88,7 +121,17 @@ const Navbar = () => {
                 <TranslatableText text="Solutions" />
               </motion.a>
               <motion.a
-                href="#resources"
+                href="/#activities"
+                onClick={(e) => handleNavClick(e, '#activities')}
+                className="hover:text-blue-600 transition-colors cursor-pointer"
+                variants={navItemVariants}
+                whileHover="hover"
+              >
+                <TranslatableText text="Activities" />
+              </motion.a>
+              <motion.a
+                href="/#resources"
+                onClick={(e) => handleNavClick(e, '#resources')}
                 className="hover:text-blue-600 transition-colors cursor-pointer"
                 variants={navItemVariants}
                 whileHover="hover"
@@ -96,7 +139,8 @@ const Navbar = () => {
                 <TranslatableText text="Resources" />
               </motion.a>
               <motion.a
-                href="#chat"
+                href="/#chat"
+                onClick={(e) => handleNavClick(e, '#chat')}
                 className="hover:text-blue-600 transition-colors cursor-pointer"
                 variants={navItemVariants}
                 whileHover="hover"
@@ -104,7 +148,8 @@ const Navbar = () => {
                 <TranslatableText text="Specialist Chat" />
               </motion.a>
               <motion.a
-                href="#team"
+                href="/#team"
+                onClick={(e) => handleNavClick(e, '#team')}
                 className="hover:text-blue-600 transition-colors cursor-pointer"
                 variants={navItemVariants}
                 whileHover="hover"
@@ -128,12 +173,53 @@ const Navbar = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <AlertTriangle size={16} />
-                  <span className="text-sm font-medium">{error}</span>
+                  <span className="text-sm font-medium"><TranslatableText text={error} /></span>
                 </motion.div>
               )}
 
-              {/* Google Translate Widget Mount Point */}
-              <div id="google_translate_element" className="block"></div>
+              {/* Language Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangDropdown(!showLangDropdown)}
+                  className="flex items-center gap-2 bg-slate-50 hover:bg-blue-50 text-slate-700 px-3 py-2 rounded-xl transition-all border border-slate-100 hover:border-blue-100 group"
+                >
+                  <Globe size={16} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                  <span className="text-xs font-black uppercase tracking-widest hidden sm:block">
+                    {LANGUAGES.find(l => l.code === language)?.nativeName}
+                  </span>
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${showLangDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showLangDropdown && (
+                  <motion.div
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 overflow-hidden z-50"
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setShowLangDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 transition-colors ${language === lang.code ? 'bg-blue-50/50' : ''}`}
+                      >
+                        <span className="text-xl">{lang.flag}</span>
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-bold ${language === lang.code ? 'text-blue-600' : 'text-slate-900'}`}>
+                            {lang.nativeName}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">
+                            {lang.name}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           </div>
         </div>

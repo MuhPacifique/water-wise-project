@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { googleTranslateService } from '../services/gemini';
-import { useTranslation } from './Home';
+import { useTranslation } from '../contexts/TranslationContext';
 import { Send, MessageSquare, ShieldCheck, User, Sparkles, Lightbulb, Target, Users, BookOpen } from 'lucide-react';
 
 interface ChatHubProps {
@@ -19,6 +19,7 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMockMode, setIsMockMode] = useState(false);
   const [userEngagement, setUserEngagement] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +30,7 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
   }, [messages]);
 
   // AI response system for water conservation
-  const getAIResponse = async (userMessage: string, chatHistory: {role: 'user' | 'model', text: string}[], currentLanguage: string): Promise<string> => {
+  const getAIResponse = async (userMessage: string, chatHistory: {role: 'user' | 'model', text: string}[], currentLanguage: string): Promise<{response: string, isMock: boolean}> => {
     try {
       const response = await fetch('/api/consultation/chat', {
         method: 'POST',
@@ -48,7 +49,10 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
       }
 
       const data = await response.json();
-      return data.data.response;
+      return {
+        response: data.data.response,
+        isMock: !!data.data.isMock
+      };
     } catch (error) {
       console.error("Consultation API Error:", error);
       throw error;
@@ -71,8 +75,9 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
     setUserEngagement(prev => prev + 1);
 
     try {
-      const reply = await getAIResponse(userMsg, chatHistory, language);
+      const { response: reply, isMock } = await getAIResponse(userMsg, chatHistory, language);
       setMessages(prev => [...prev, { role: 'model', text: reply, timestamp: new Date() }]);
+      setIsMockMode(isMock);
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, {
@@ -207,15 +212,19 @@ const ChatHub: React.FC<ChatHubProps> = ({ TranslatableText }) => {
               <div>
                 <p className="font-black text-sm tracking-tight flex items-center gap-2">
                   <TranslatableText text="Gemini AI Specialist" />
-                  <span className="bg-white/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">1.5 Flash</span>
+                  <span className="bg-white/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">
+                    {isMockMode ? 'Demo Mode' : '1.5 Flash'}
+                  </span>
                 </p>
                 <div className="flex items-center gap-2 opacity-80">
                   <motion.span
-                    className="w-2 h-2 bg-green-400 rounded-full"
+                    className={`w-2 h-2 rounded-full ${isMockMode ? 'bg-orange-400' : 'bg-green-400'}`}
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   ></motion.span>
-                  <p className="text-[10px] uppercase font-bold tracking-widest"><TranslatableText text="Autonomous Online" /></p>
+                  <p className="text-[10px] uppercase font-bold tracking-widest">
+                    <TranslatableText text={isMockMode ? "Simulation Mode" : "Autonomous Online"} />
+                  </p>
                 </div>
               </div>
             </div>

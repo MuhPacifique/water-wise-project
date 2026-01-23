@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, AlertCircle, Loader } from 'lucide-react';
-
-// Simple TranslatableText component for Login
-const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  return <span>{text}</span>;
-};
+import { LogIn, AlertCircle, Loader, ArrowLeft } from 'lucide-react';
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { LANGUAGES } from '../constants';
 
 const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { language, isTranslating } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -53,6 +51,16 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="absolute top-8 left-8">
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition-all"
+        >
+          <ArrowLeft size={18} />
+          <TranslatableText text="Back to Home" />
+        </Link>
+      </div>
+
       <motion.div
         className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8"
         initial={{ opacity: 0, y: 20 }}
@@ -79,7 +87,7 @@ const Login: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
             >
               <AlertCircle size={18} />
-              {error}
+              <TranslatableText text={error} />
             </motion.div>
           )}
 
@@ -135,6 +143,25 @@ const Login: React.FC = () => {
         </form>
 
       </motion.div>
+
+      {/* Global Loading Spinner for Translations */}
+      {isTranslating && (
+        <motion.div
+          className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </div>
+          <span className="text-sm font-bold text-blue-700 tracking-tight">
+            Translating to {LANGUAGES.find(l => l.code === language)?.nativeName}...
+          </span>
+        </motion.div>
+      )}
     </div>
   );
 };

@@ -4,6 +4,8 @@ import { AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Language, TranslationContextType, ProblemContent, TeamMember, FooterContent } from '../types';
 import { googleTranslateService } from '../services/gemini';
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { useContent } from '../contexts/ContentContext';
 import { LANGUAGES, TEAM, ACTIVITIES, SOLUTIONS_ITEMS, PROBLEM_POINTS } from '../constants';
 import Navbar from './Navbar';
 import Hero from './Hero';
@@ -121,70 +123,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-const TranslationContext = createContext<TranslationContextType | undefined>(undefined);
-const ContentContext = createContext<SiteContent | undefined>(undefined);
-
-export const useTranslation = () => {
-  const context = useContext(TranslationContext);
-  if (!context) throw new Error('useTranslation must be used within a TranslationProvider');
-  return context;
-};
-
-export const useContent = () => {
-  const context = useContext(ContentContext);
-  if (!context) throw new Error('useContent must be used within a ContentProvider');
-  return context;
-};
-
-interface SiteContent {
-  hero_title: string;
-  site_name: string;
-  hero_subtitle: string;
-  site_description: string;
-}
-
-// Global Translatable component
-export const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  const { language, setIsTranslating } = useTranslation();
-  const [translatedText, setTranslatedText] = useState(text);
-  const [translationError, setTranslationError] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    const doTranslate = async () => {
-      if (language === 'en') {
-        setTranslatedText(text);
-        setTranslationError(false);
-        return;
-      }
-
-      setIsTranslating(true);
-      setTranslationError(false);
-
-      try {
-        const result = await googleTranslateService.translateText(text, language);
-        if (isMounted) {
-          setTranslatedText(result || text); // Fallback to original text if translation fails
-        }
-      } catch (error) {
-        console.error('Translation error:', error);
-        if (isMounted) {
-          setTranslatedText(text); // Fallback to original text
-          setTranslationError(true);
-        }
-      } finally {
-        if (isMounted) setIsTranslating(false);
-      }
-    };
-
-    doTranslate();
-    return () => { isMounted = false; };
-  }, [text, language]);
-
-  // If there's a translation error, show original text with subtle indicator
-  return <span className={translationError ? 'opacity-75' : ''}>{translatedText}</span>;
-};
-
 interface FrontendVisibility {
   showHero: boolean;
   showProblem: boolean;
@@ -199,17 +137,12 @@ interface FrontendVisibility {
 
 const Home: React.FC = () => {
   const { user } = useAuth();
-  const [language, setLanguage] = useState<Language>('en');
-  const [isTranslating, setIsTranslating] = useState(false);
+  const { language, isTranslating } = useTranslation();
+  const { siteContent, setSiteContent } = useContent();
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(TEAM);
-  const [siteContent, setSiteContent] = useState<SiteContent>({
-    hero_title: "Protecting water resources",
-    site_name: "Water-Wise Project",
-    hero_subtitle: "Save the Water",
-    site_description: "Empowering communities across East Africa to protect, conserve, and sustain our most precious natural resource through education and action."
-  });
+  const [initiatives, setInitiatives] = useState<any[]>(ACTIVITIES);
   const [problemContent, setProblemContent] = useState<ProblemContent>({
     title: "Water Resource Challenge",
     subtitle: "Critical Challenge",
@@ -237,13 +170,14 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const [maintenanceResponse, visibilityResponse, contentResponse, problemResponse, teamResponse, footerResponse] = await Promise.all([
+        const [maintenanceResponse, visibilityResponse, contentResponse, problemResponse, teamResponse, footerResponse, initiativesResponse] = await Promise.all([
           fetch('/api/settings/maintenance'),
           fetch('/api/settings/frontend-visibility'),
           fetch('/api/settings/content'),
           fetch('/api/settings/problem-content'),
           fetch('/api/team/public'),
-          fetch('/api/settings/footer')
+          fetch('/api/settings/footer'),
+          fetch('/api/initiatives')
         ]);
 
         const maintenanceData = await maintenanceResponse.json();
@@ -252,6 +186,7 @@ const Home: React.FC = () => {
         const problemData = await problemResponse.json();
         const teamData = await teamResponse.json();
         const footerData = await footerResponse.json();
+        const initiativesData = await initiativesResponse.json();
 
         setMaintenanceMode(maintenanceData.maintenanceMode || false);
         setVisibilitySettings(visibilityData.data || visibilitySettings);
@@ -272,6 +207,9 @@ const Home: React.FC = () => {
           }));
           setTeamMembers(mappedTeam);
         }
+        if (initiativesData.success && initiativesData.data && initiativesData.data.length > 0) {
+          setInitiatives(initiativesData.data);
+        }
       } catch (error) {
         console.error('Error fetching settings:', error);
       } finally {
@@ -281,14 +219,6 @@ const Home: React.FC = () => {
 
     fetchSettings();
   }, []);
-
-  const contextValue: TranslationContextType = {
-    language,
-    setLanguage,
-    translate: async (text: string) => googleTranslateService.translateText(text, language),
-    isTranslating,
-    setIsTranslating: (val: boolean) => setIsTranslating(val)
-  };
 
   // Show loading state while fetching maintenance mode
   if (loading) {
@@ -306,9 +236,7 @@ const Home: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <ContentContext.Provider value={siteContent}>
-        <TranslationContext.Provider value={contextValue}>
-          {maintenanceMode && user?.role === 'admin' && (
+      {maintenanceMode && user?.role === 'admin' && (
             <div className="bg-orange-600 text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2 sticky top-0 z-[100]">
               <ShieldAlert size={16} />
               MAINTENANCE MODE IS ACTIVE - Showing site to administrator only
@@ -377,7 +305,7 @@ const Home: React.FC = () => {
                   transition={{ duration: 0.6, delay: 0.1 }}
                   viewport={{ once: true, margin: "-50px" }}
                 >
-                  <ActivitiesSection TranslatableText={TranslatableText} activities={ACTIVITIES} />
+                  <ActivitiesSection TranslatableText={TranslatableText} activities={initiatives} />
                 </motion.section>
               )}
 
@@ -437,8 +365,6 @@ const Home: React.FC = () => {
               </motion.div>
             )}
           </motion.div>
-        </TranslationContext.Provider>
-      </ContentContext.Provider>
     </ErrorBoundary>
   );
 };

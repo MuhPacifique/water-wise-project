@@ -1,13 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useContent } from './Home';
+import { useContent } from '../contexts/ContentContext';
 
 interface HeroProps {
   TranslatableText: React.FC<{ text: string }>;
 }
 
 const Hero: React.FC<HeroProps> = ({ TranslatableText }) => {
-  const { hero_title, site_name, hero_subtitle, site_description } = useContent();
+  const { siteContent } = useContent();
+  const { hero_title, site_name, hero_subtitle, site_description } = siteContent;
   
   const containerVariants = {
     hidden: { opacity: 0 },

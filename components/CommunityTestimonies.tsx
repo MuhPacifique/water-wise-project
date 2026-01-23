@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 import { MessageSquare, Quote, User, Home, Heart, Share2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  return <span>{text}</span>;
-};
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { LANGUAGES } from '../constants';
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 const CommunityTestimonies: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language, isTranslating } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [testimonies, setTestimonies] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -82,12 +83,14 @@ const CommunityTestimonies: React.FC = () => {
   };
 
   return (
-    <motion.div
-      className="min-h-screen bg-slate-50 py-24"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
+      <motion.div
+        className="py-24"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-start mb-4">
           <motion.button
@@ -144,7 +147,7 @@ const CommunityTestimonies: React.FC = () => {
                 </div>
                 
                 <p className="text-slate-700 italic mb-8 leading-relaxed text-lg">
-                  "{testimony.text}"
+                  "<TranslatableText text={testimony.text} />"
                 </p>
 
                 <div className="flex items-center justify-between pt-6 border-t border-slate-100">
@@ -153,8 +156,8 @@ const CommunityTestimonies: React.FC = () => {
                       <User size={20} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{testimony.name}</h4>
-                      <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">{testimony.location}</p>
+                      <h4 className="font-bold text-slate-900 text-sm"><TranslatableText text={testimony.name} /></h4>
+                      <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest"><TranslatableText text={testimony.location} /></p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -177,11 +180,11 @@ const CommunityTestimonies: React.FC = () => {
               <div className="max-w-xl text-center md:text-left">
                 <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
                   <Sparkles size={20} className="text-blue-200" />
-                  <span className="text-blue-100 text-xs font-black uppercase tracking-widest">Join the Movement</span>
+                  <span className="text-blue-100 text-xs font-black uppercase tracking-widest"><TranslatableText text="Join the Movement" /></span>
                 </div>
-                <h3 className="text-2xl font-bold mb-2">Share Your Story</h3>
+                <h3 className="text-2xl font-bold mb-2"><TranslatableText text="Share Your Story" /></h3>
                 <p className="text-blue-100 opacity-90 leading-relaxed">
-                  Has our project helped you or your community? We'd love to hear your story and share it to inspire others across the region.
+                  <TranslatableText text="Has our project helped you or your community? We'd love to hear your story and share it to inspire others across the region." />
                 </p>
               </div>
               <button className="px-8 py-4 bg-white text-blue-700 font-black rounded-2xl hover:bg-blue-50 transition-all shadow-xl shadow-blue-900/20 whitespace-nowrap">
@@ -191,7 +194,28 @@ const CommunityTestimonies: React.FC = () => {
           </div>
         )}
       </div>
-    </motion.div>
+      </motion.div>
+      <Footer TranslatableText={TranslatableText} />
+
+      {/* Global Loading Spinner for Translations */}
+      {isTranslating && (
+        <motion.div
+          className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </div>
+          <span className="text-sm font-bold text-blue-700 tracking-tight">
+            Translating to {LANGUAGES.find(l => l.code === language)?.nativeName}...
+          </span>
+        </motion.div>
+      )}
+    </div>
   );
 };
 

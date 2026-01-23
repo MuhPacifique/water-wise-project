@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { sendTokenResponse } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -18,11 +18,7 @@ router.post('/register', [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { name, email, password, country } = req.body;
@@ -35,10 +31,7 @@ router.post('/register', [
   );
 
   if (existingUsers.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'User with this email already exists'
-    });
+    return next(new AppError('User with this email already exists', 400));
   }
 
   // Hash password
@@ -81,11 +74,7 @@ router.post('/login', [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { email, password } = req.body;
@@ -100,10 +89,7 @@ router.post('/login', [
 
   if (users.length === 0) {
     console.log('User not found:', email);
-    return res.status(401).json({
-      success: false,
-      message: 'User not found'
-    });
+    return next(new AppError('User not found', 401));
   }
 
   const user = users[0];
@@ -112,10 +98,7 @@ router.post('/login', [
   // Check if user is active
   if (!user.is_active) {
     console.log('User inactive:', email);
-    return res.status(401).json({
-      success: false,
-      message: 'Account is deactivated. Please contact support.'
-    });
+    return next(new AppError('Account is deactivated. Please contact support.', 401));
   }
 
   // Check password
@@ -123,10 +106,7 @@ router.post('/login', [
   console.log('Password valid:', isPasswordValid);
   
   if (!isPasswordValid) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid password'
-    });
+    return next(new AppError('Invalid password', 401));
   }
 
   // Update last login
@@ -179,10 +159,7 @@ router.get('/me', require('../middleware/auth').protect, catchAsync(async (req, 
   `, [req.user.id]);
 
   if (users.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found'
-    });
+    return next(new AppError('User not found', 404));
   }
 
   const user = users[0];
@@ -208,11 +185,7 @@ router.put('/updatepassword', require('../middleware/auth').protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { currentPassword, newPassword } = req.body;
@@ -225,19 +198,13 @@ router.put('/updatepassword', require('../middleware/auth').protect, [
   );
 
   if (users.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found'
-    });
+    return next(new AppError('User not found', 404));
   }
 
   // Check current password
   const isCurrentPasswordValid = await bcrypt.compare(currentPassword, users[0].password);
   if (!isCurrentPasswordValid) {
-    return res.status(401).json({
-      success: false,
-      message: 'Current password is incorrect'
-    });
+    return next(new AppError('Current password is incorrect', 401));
   }
 
   // Hash new password
@@ -270,11 +237,7 @@ router.post('/forgotpassword', [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { email } = req.body;
@@ -330,11 +293,7 @@ router.put('/resetpassword/:token', [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { token } = req.params;
@@ -348,10 +307,7 @@ router.put('/resetpassword/:token', [
   );
 
   if (users.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid or expired reset token'
-    });
+    return next(new AppError('Invalid or expired reset token', 400));
   }
 
   const user = users[0];

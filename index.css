@@ -30,3 +30,31 @@ body {
   color: #f1f5f9;
   background: #0f172a;
 }
+
+body {
+    font-family: 'Inter', sans-serif;
+    scroll-behavior: smooth;
+}
+.bg-water-pattern {
+    background-color: #f0f9ff;
+    background-image: radial-gradient(#bae6fd 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+}
+/* Custom styles to make Google Translate look cleaner */
+#google_translate_element {
+    margin-top: 5px;
+}
+.goog-te-gadget-simple {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 9999px !important;
+    padding: 4px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    background-color: #f8fafc !important;
+}
+.goog-te-banner-frame.skiptranslate {
+    display: none !important;
+} 
+body {
+    top: 0px !important; 
+}

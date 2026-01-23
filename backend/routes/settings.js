@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -24,11 +24,7 @@ router.post('/frontend', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const settings = req.body;
@@ -178,11 +174,7 @@ router.post('/content', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const content = req.body;
@@ -249,11 +241,7 @@ router.post('/problem-content', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const content = req.body;
@@ -329,11 +317,7 @@ router.post('/footer', protect, authorize('admin'), [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const content = req.body;

@@ -3,16 +3,16 @@ import { motion } from 'framer-motion';
 import { Video, Play, Eye, Home, Star, BookOpen, Layers, Globe, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation, TranslatableText } from '../contexts/TranslationContext';
+import { LANGUAGES } from '../constants';
 import VideoModal from './VideoModal';
-
-// Simple TranslatableText component
-const TranslatableText: React.FC<{ text: string }> = ({ text }) => {
-  return <span>{text}</span>;
-};
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 const InteractiveTutorials: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language, isTranslating } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [tutorials, setTutorials] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -103,12 +103,14 @@ const InteractiveTutorials: React.FC = () => {
   };
 
   return (
-    <motion.div
-      className="min-h-screen bg-slate-50 py-24"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
+      <motion.div
+        className="py-24"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-start mb-4">
           <motion.button
@@ -243,20 +245,20 @@ const InteractiveTutorials: React.FC = () => {
                     <div className="flex items-center gap-2 mb-3">
                       <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         <Layers size={10} />
-                        {tutorial.category || 'General'}
+                        <TranslatableText text={tutorial.category || 'General'} />
                       </span>
                       <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         <Globe size={10} />
-                        {tutorial.language === 'en' ? 'English' : tutorial.language}
+                        <TranslatableText text={tutorial.language === 'en' ? 'English' : (tutorial.language || 'General')} />
                       </span>
                     </div>
                     
                     <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {tutorial.title}
+                      <TranslatableText text={tutorial.title} />
                     </h3>
                     
                     <p className="text-sm text-slate-500 mb-6 line-clamp-2">
-                      {tutorial.description}
+                      <TranslatableText text={tutorial.description} />
                     </p>
                     
                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">
@@ -282,6 +284,27 @@ const InteractiveTutorials: React.FC = () => {
           </div>
         )}
       </div>
+      </motion.div>
+      <Footer TranslatableText={TranslatableText} />
+
+      {/* Global Loading Spinner for Translations */}
+      {isTranslating && (
+        <motion.div
+          className="fixed bottom-6 right-6 bg-white/90 backdrop-blur shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 border border-blue-100 z-50"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </div>
+          <span className="text-sm font-bold text-blue-700 tracking-tight">
+            Translating to {LANGUAGES.find(l => l.code === language)?.nativeName}...
+          </span>
+        </motion.div>
+      )}
 
       {/* Video Modal */}
       {selectedTutorial && (
@@ -294,7 +317,7 @@ const InteractiveTutorials: React.FC = () => {
           poster={selectedTutorial.thumbnail_url}
         />
       )}
-    </motion.div>
+    </div>
   );
 };
 

@@ -29,6 +29,7 @@ const translationRoutes = require('./routes/translation');
 const analyticsRoutes = require('./routes/analytics');
 const consultationRoutes = require('./routes/consultation');
 const teamRoutes = require('./routes/team');
+const initiativeRoutes = require('./routes/initiatives');
 
 // Initialize express
 const app = express();
@@ -71,6 +72,7 @@ app.use('/api/translation', translationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/consultation', consultationRoutes);
 app.use('/api/team', teamRoutes);
+app.use('/api/initiatives', initiativeRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -105,8 +107,15 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await initializeDatabase();
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    const serverInstance = server.listen(PORT, '127.0.0.1', () => {
+      console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on http://127.0.0.1:${PORT}`);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (err, promise) => {
+      console.log(`Error: ${err.message}`);
+      // Close server & exit process
+      serverInstance.close(() => process.exit(1));
     });
   } catch (error) {
     console.error('Failed to start server:', error);

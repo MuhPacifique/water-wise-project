@@ -131,6 +131,18 @@ interface TeamMember {
   created_at: string;
 }
 
+interface Initiative {
+  id: number;
+  title: string;
+  description: string;
+  content: string;
+  icon: string;
+  image_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Registration {
   id: number;
   campaign_id: number;
@@ -186,6 +198,7 @@ const AdminPage: React.FC = () => {
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -215,6 +228,8 @@ const AdminPage: React.FC = () => {
   const [showEditCampaignModal, setShowEditCampaignModal] = useState(false);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [showAddInitiativeModal, setShowAddInitiativeModal] = useState(false);
+  const [showEditInitiativeModal, setShowEditInitiativeModal] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -223,6 +238,7 @@ const AdminPage: React.FC = () => {
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
   const [editingTestimony, setEditingTestimony] = useState<Testimony | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [editingInitiative, setEditingInitiative] = useState<Initiative | null>(null);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
@@ -289,6 +305,14 @@ const AdminPage: React.FC = () => {
     image_url: '',
     image: null as File | null
   });
+  const [newInitiative, setNewInitiative] = useState({
+    title: '',
+    description: '',
+    content: '',
+    icon: '🌳',
+    image_url: '',
+    is_active: true
+  });
   const [editingCampaignFiles, setEditingCampaignFiles] = useState({
     image: null as File | null
   });
@@ -333,6 +357,8 @@ const AdminPage: React.FC = () => {
       fetchTestimonies();
     } else if (user && activeTab === 'campaigns') {
       fetchCampaigns();
+    } else if (user && activeTab === 'initiatives') {
+      fetchInitiatives();
     } else if (user && activeTab === 'team') {
       fetchTeamMembers();
     } else if (user && activeTab === 'registrations') {
@@ -368,6 +394,7 @@ const AdminPage: React.FC = () => {
     { id: 'trainings', label: 'Trainings', icon: FileText },
     { id: 'testimonies', label: 'Testimonies', icon: MessageSquare },
     { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
+    { id: 'initiatives', label: 'Initiatives', icon: ClipboardList },
     { id: 'team', label: 'Team', icon: Users },
     { id: 'registrations', label: 'Volunteer Registration', icon: ClipboardList },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
@@ -928,7 +955,8 @@ const AdminPage: React.FC = () => {
             status: "Upcoming",
             campaign_type: "Plastic Collection",
             image_url: "https://images.unsplash.com/photo-1541675154750-0444c7d51e8e?auto=format&fit=crop&q=80&w=800",
-            is_active: true
+            is_active: true,
+            created_at: new Date().toISOString()
           }
         ]);
       }
@@ -944,7 +972,8 @@ const AdminPage: React.FC = () => {
           status: "Upcoming",
           campaign_type: "Plastic Collection",
           image_url: "https://images.unsplash.com/photo-1541675154750-0444c7d51e8e?auto=format&fit=crop&q=80&w=800",
-          is_active: true
+          is_active: true,
+          created_at: new Date().toISOString()
         }
       ]);
     } finally {
@@ -980,6 +1009,25 @@ const AdminPage: React.FC = () => {
           }
         ]);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInitiatives = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/initiatives/admin', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInitiatives(data.data || []);
+      }
+    } catch (err) {
+      console.error('Fetch initiatives error:', err);
     } finally {
       setLoading(false);
     }
@@ -1224,6 +1272,88 @@ const AdminPage: React.FC = () => {
       }
     } catch (err) {
       setError('Failed to delete campaign');
+    }
+  };
+
+  const addInitiative = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/initiatives', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(newInitiative)
+      });
+      if (response.ok) {
+        setShowAddInitiativeModal(false);
+        setNewInitiative({
+          title: '',
+          description: '',
+          content: '',
+          icon: '🌳',
+          image_url: '',
+          is_active: true
+        });
+        fetchInitiatives();
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to add initiative');
+      }
+    } catch (err) {
+      setError('Failed to add initiative');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateInitiative = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInitiative) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/initiatives/${editingInitiative.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(editingInitiative)
+      });
+      if (response.ok) {
+        setShowEditInitiativeModal(false);
+        setEditingInitiative(null);
+        fetchInitiatives();
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to update initiative');
+      }
+    } catch (err) {
+      setError('Failed to update initiative');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteInitiative = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this initiative?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/initiatives/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        fetchInitiatives();
+      } else {
+        setError('Failed to delete initiative');
+      }
+    } catch (err) {
+      setError('Failed to delete initiative');
     }
   };
 
@@ -2221,6 +2351,77 @@ const AdminPage: React.FC = () => {
     </div>
   );
 
+  const renderInitiatives = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-slate-900">Initiatives Management</h3>
+        <button
+          onClick={() => {
+            setError('');
+            setShowAddInitiativeModal(true);
+          }}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2 transition-colors"
+        >
+          <Plus size={16} />
+          Add Initiative
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-slate-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Icon</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-slate-200">
+            {initiatives.map((initiative) => (
+              <tr key={initiative.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-xl">{initiative.icon}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{initiative.title}</td>
+                <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">{initiative.description}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${initiative.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {initiative.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                  <a
+                    href={`/initiative/${initiative.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-600 hover:text-green-900"
+                    title="View Page"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                  <button
+                    onClick={() => {
+                      setEditingInitiative(initiative);
+                      setShowEditInitiativeModal(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-900"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => deleteInitiative(initiative.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   const renderTeam = () => (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div className="p-6 border-b border-slate-200 flex justify-between items-center">
@@ -2548,6 +2749,7 @@ const AdminPage: React.FC = () => {
             {activeTab === 'trainings' && renderTrainings()}
             {activeTab === 'testimonies' && renderTestimonies()}
             {activeTab === 'campaigns' && renderCampaigns()}
+            {activeTab === 'initiatives' && renderInitiatives()}
             {activeTab === 'team' && renderTeam()}
             {activeTab === 'registrations' && renderRegistrations()}
             {activeTab === 'chat' && renderChat()}
@@ -4016,6 +4218,205 @@ const AdminPage: React.FC = () => {
                   <div className="flex gap-2">
                     <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update Campaign</button>
                     <button type="button" onClick={() => setShowEditCampaignModal(false)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAddInitiativeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <Plus className="text-blue-600" />
+                  Add New Initiative Page
+                </h3>
+                <button onClick={() => setShowAddInitiativeModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-8 overflow-y-auto flex-1">
+                <form onSubmit={addInitiative} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Title *</label>
+                        <input
+                          type="text"
+                          value={newInitiative.title}
+                          onChange={(e) => setNewInitiative({ ...newInitiative, title: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                          placeholder="e.g. Tree Planting"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Icon (Emoji) *</label>
+                        <input
+                          type="text"
+                          value={newInitiative.icon}
+                          onChange={(e) => setNewInitiative({ ...newInitiative, icon: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-2xl"
+                          placeholder="🌳"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Image URL</label>
+                        <input
+                          type="text"
+                          value={newInitiative.image_url}
+                          onChange={(e) => setNewInitiative({ ...newInitiative, image_url: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                          placeholder="https://images.unsplash.com/..."
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Short Description *</label>
+                        <textarea
+                          value={newInitiative.description}
+                          onChange={(e) => setNewInitiative({ ...newInitiative, description: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium h-32 resize-none"
+                          placeholder="Briefly describe what this initiative is about..."
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Page Content (HTML Allowed) *</label>
+                    <textarea
+                      value={newInitiative.content}
+                      onChange={(e) => setNewInitiative({ ...newInitiative, content: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-mono text-sm h-64"
+                      placeholder="<h1>Title</h1><p>Detailed content...</p>"
+                      required
+                    />
+                    <p className="mt-2 text-[10px] text-slate-400 italic">You can use standard HTML tags for formatting your page content.</p>
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 flex gap-4">
+                    <button 
+                      type="submit" 
+                      className="flex-1 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                    >
+                      Create Initiative Page
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowAddInitiativeModal(false)} 
+                      className="px-8 py-4 bg-slate-100 text-slate-600 font-black rounded-xl hover:bg-slate-200 transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditInitiativeModal && editingInitiative && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <Edit className="text-blue-600" />
+                  Edit Initiative Page
+                </h3>
+                <button onClick={() => setShowEditInitiativeModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-8 overflow-y-auto flex-1">
+                <form onSubmit={updateInitiative} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Title *</label>
+                        <input
+                          type="text"
+                          value={editingInitiative.title}
+                          onChange={(e) => setEditingInitiative({ ...editingInitiative, title: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Icon (Emoji) *</label>
+                        <input
+                          type="text"
+                          value={editingInitiative.icon}
+                          onChange={(e) => setEditingInitiative({ ...editingInitiative, icon: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-2xl"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Status</label>
+                          <select
+                            value={editingInitiative.is_active ? 'true' : 'false'}
+                            onChange={(e) => setEditingInitiative({ ...editingInitiative, is_active: e.target.value === 'true' })}
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                          >
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Image URL</label>
+                        <input
+                          type="text"
+                          value={editingInitiative.image_url}
+                          onChange={(e) => setEditingInitiative({ ...editingInitiative, image_url: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Short Description *</label>
+                        <textarea
+                          value={editingInitiative.description}
+                          onChange={(e) => setEditingInitiative({ ...editingInitiative, description: e.target.value })}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium h-32 resize-none"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Page Content (HTML Allowed) *</label>
+                    <textarea
+                      value={editingInitiative.content}
+                      onChange={(e) => setEditingInitiative({ ...editingInitiative, content: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-mono text-sm h-64"
+                      required
+                    />
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 flex gap-4">
+                    <button 
+                      type="submit" 
+                      className="flex-1 py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                    >
+                      Update Initiative Page
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowEditInitiativeModal(false)} 
+                      className="px-8 py-4 bg-slate-100 text-slate-600 font-black rounded-xl hover:bg-slate-200 transition-all"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </form>
               </div>

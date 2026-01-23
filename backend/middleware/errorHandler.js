@@ -2,10 +2,11 @@ const { getPool } = require('../config/database');
 
 // Custom error class
 class AppError extends Error {
-  constructor(message, statusCode = 500, isOperational = true) {
+  constructor(message, statusCode = 500, data = null, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
+    this.data = data;
     this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
 
     Error.captureStackTrace(this, this.constructor);
@@ -86,6 +87,7 @@ const errorHandler = (err, req, res, next) => {
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Something went wrong!',
+    ...(error.data && { errors: error.data }),
     error: {
       message: error.message || 'Something went wrong!',
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack })

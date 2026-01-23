@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, optionalAuth } = require('../middleware/auth');
 const geminiService = require('../services/geminiService');
 
@@ -18,29 +18,20 @@ router.post('/chat', optionalAuth, [
 ], catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { message, history = [], language = 'en' } = req.body;
 
-  try {
-    const response = await geminiService.generateResponse(message, history, language);
-    
-    res.status(200).json({
-      success: true,
-      data: {
-        response
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get response from AI specialist'
-    });
-  }
+  const { response, isMock } = await geminiService.generateResponse(message, history, language);
+  
+  res.status(200).json({
+    success: true,
+    data: {
+      response,
+      isMock
+    }
+  });
 }));
 
 /**

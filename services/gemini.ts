@@ -2,43 +2,35 @@
 import { Language } from "../types";
 
 export class GoogleTranslateService {
-  private readonly baseUrl = 'https://translate.googleapis.com/translate_a/single';
+  private readonly apiEndpoint = '/api/translation/translate';
 
   async translateText(text: string, targetLanguage: Language): Promise<string> {
     if (targetLanguage === 'en' || !text.trim()) return text;
 
     try {
-      const params = new URLSearchParams({
-        client: 'gtx',
-        sl: 'en',
-        tl: targetLanguage,
-        dt: 't',
-        q: text
-      });
-
-      const response = await fetch(`${this.baseUrl}?${params}`, {
-        method: 'GET',
+      const response = await fetch(this.apiEndpoint, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          text,
+          to: targetLanguage,
+          from: 'en'
+        }),
       });
 
       if (!response.ok) {
         throw new Error(`Translation API error: ${response.status}`);
       }
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        console.error('Failed to parse JSON response from translation API:', jsonError);
-        // Fallback to original text if JSON parsing fails
-        return text;
+      const data = await response.json();
+      if (data.success && data.data) {
+        return data.data.translatedText || text;
       }
-      return data[0][0][0] || text;
+      return text;
     } catch (error) {
-      console.error("Google Translate Error:", error);
-      // Return original text on error for graceful degradation
+      console.error("Translation Error:", error);
       return text;
     }
   }

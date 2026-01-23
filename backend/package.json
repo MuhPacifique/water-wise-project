@@ -4,7 +4,9 @@
   "description": "Backend API for Water-Wise Project - East African water conservation platform",
   "main": "server.js",
   "scripts": {
+    "prestart": "node cleanup-port.js",
     "start": "node server.js",
+    "predev": "node cleanup-port.js",
     "dev": "nodemon server.js",
     "test": "jest",
     "migrate": "node scripts/migrate.js",
@@ -22,6 +24,7 @@
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",

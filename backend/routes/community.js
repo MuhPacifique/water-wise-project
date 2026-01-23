@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { body, param, query, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -81,11 +81,7 @@ router.post('/testimonies', [
 ], catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Validation failed: ' + errors.array().map(e => e.msg).join(', '),
-      errors: errors.array() 
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { name, location, text } = req.body;
@@ -130,7 +126,7 @@ router.put('/testimonies/:id', protect, authorize('admin'), [
   });
 
   if (updates.length === 0) {
-    return res.status(400).json({ success: false, message: 'No fields to update' });
+    return next(new AppError('No fields to update', 400));
   }
 
   values.push(id);
@@ -184,10 +180,7 @@ router.get('/campaigns/:id', catchAsync(async (req, res) => {
   );
 
   if (campaigns.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Campaign not found'
-    });
+    return next(new AppError('Campaign not found', 404));
   }
 
   res.status(200).json({
@@ -225,11 +218,7 @@ router.post('/campaigns', protect, authorize('admin'), upload.single('image'), [
 ], catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Validation failed: ' + errors.array().map(e => e.msg).join(', '),
-      errors: errors.array() 
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   let { title, location = null, date = null, participants = 0, status = 'Planned', campaign_type = 'Awareness', image_url = null } = req.body;
@@ -269,7 +258,7 @@ router.put('/campaigns/:id', protect, authorize('admin'), upload.single('image')
 
   const [existing] = await pool.execute('SELECT * FROM water_campaigns WHERE id = ?', [id]);
   if (existing.length === 0) {
-    return res.status(404).json({ success: false, message: 'Campaign not found' });
+    return next(new AppError('Campaign not found', 404));
   }
 
   if (req.file) {
@@ -295,7 +284,7 @@ router.put('/campaigns/:id', protect, authorize('admin'), upload.single('image')
   });
 
   if (updates.length === 0) {
-    return res.status(400).json({ success: false, message: 'No fields to update' });
+    return next(new AppError('No fields to update', 400));
   }
 
   values.push(id);
@@ -316,7 +305,7 @@ router.delete('/campaigns/:id', protect, authorize('admin'), catchAsync(async (r
 
   const [existing] = await pool.execute('SELECT * FROM water_campaigns WHERE id = ?', [id]);
   if (existing.length === 0) {
-    return res.status(404).json({ success: false, message: 'Campaign not found' });
+    return next(new AppError('Campaign not found', 404));
   }
 
   // Delete local image file
@@ -345,11 +334,7 @@ router.post('/campaigns/:id/register', [
 ], catchAsync(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Validation failed: ' + errors.array().map(e => e.msg).join(', '),
-      errors: errors.array() 
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -359,7 +344,7 @@ router.post('/campaigns/:id/register', [
   // Check if campaign exists
   const [campaigns] = await pool.execute('SELECT * FROM water_campaigns WHERE id = ?', [id]);
   if (campaigns.length === 0) {
-    return res.status(404).json({ success: false, message: 'Campaign not found' });
+    return next(new AppError('Campaign not found', 404));
   }
 
   // Insert registration

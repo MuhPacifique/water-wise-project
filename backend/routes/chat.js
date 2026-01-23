@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
-const { catchAsync } = require('../middleware/errorHandler');
+const { catchAsync, AppError } = require('../middleware/errorHandler');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const { getPool } = require('../config/database');
 
@@ -15,11 +15,7 @@ router.get('/rooms', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { type, active = true } = req.query;
@@ -67,11 +63,7 @@ router.get('/rooms/:id', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -89,10 +81,7 @@ router.get('/rooms/:id', protect, [
   `, [req.user.id, id, true]);
 
   if (rooms.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Chat room not found or access denied'
-    });
+    return next(new AppError('Chat room not found or access denied', 404));
   }
 
   const room = rooms[0];
@@ -126,11 +115,7 @@ router.get('/messages/:roomName', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { roomName } = req.params;
@@ -146,10 +131,7 @@ router.get('/messages/:roomName', protect, [
   `, [req.user.id, roomName, true]);
 
   if (rooms.length === 0) {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied to this chat room'
-    });
+    return next(new AppError('Access denied to this chat room', 403));
   }
 
   const offset = (page - 1) * limit;
@@ -225,11 +207,7 @@ router.post('/messages', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { room, message, messageType = 'text', replyTo } = req.body;
@@ -244,10 +222,7 @@ router.post('/messages', protect, [
   `, [req.user.id, room, true]);
 
   if (rooms.length === 0) {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied to this chat room'
-    });
+    return next(new AppError('Access denied to this chat room', 403));
   }
 
   // Validate reply_to if provided
@@ -257,10 +232,7 @@ router.post('/messages', protect, [
       [replyTo, room]
     );
     if (replyMessages.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Reply message not found in this room'
-      });
+      return next(new AppError('Reply message not found in this room', 400));
     }
   }
 
@@ -312,11 +284,7 @@ router.put('/messages/:id', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -330,19 +298,13 @@ router.put('/messages/:id', protect, [
   );
 
   if (messages.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Message not found'
-    });
+    return next(new AppError('Message not found', 404));
   }
 
   const chatMessage = messages[0];
 
   if (chatMessage.user_id !== req.user.id) {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to edit this message'
-    });
+    return next(new AppError('Not authorized to edit this message', 403));
   }
 
   // Update message
@@ -373,11 +335,7 @@ router.delete('/messages/:id', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -390,10 +348,7 @@ router.delete('/messages/:id', protect, [
   );
 
   if (messages.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Message not found'
-    });
+    return next(new AppError('Message not found', 404));
   }
 
   const chatMessage = messages[0];
@@ -434,11 +389,7 @@ router.post('/messages/:id/reactions', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -452,10 +403,7 @@ router.post('/messages/:id/reactions', protect, [
   );
 
   if (messages.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Message not found'
-    });
+    return next(new AppError('Message not found', 404));
   }
 
   let reactions = messages[0].reactions ? JSON.parse(messages[0].reactions) : {};
@@ -498,11 +446,7 @@ router.post('/rooms/:id/join', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -515,10 +459,7 @@ router.post('/rooms/:id/join', protect, [
   );
 
   if (rooms.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: 'Chat room not found'
-    });
+    return next(new AppError('Chat room not found', 404));
   }
 
   const room = rooms[0];
@@ -530,10 +471,7 @@ router.post('/rooms/:id/join', protect, [
   );
 
   if (existingMembers.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Already a member of this room'
-    });
+    return next(new AppError('Already a member of this room', 400));
   }
 
   // Add user to room
@@ -568,11 +506,7 @@ router.post('/rooms/:id/leave', protect, [
 ], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array()
-    });
+    return next(new AppError('Validation failed', 400, errors.array()));
   }
 
   const { id } = req.params;
@@ -585,10 +519,7 @@ router.post('/rooms/:id/leave', protect, [
   );
 
   if (members.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Not a member of this room'
-    });
+    return next(new AppError('Not a member of this room', 400));
   }
 
   // Remove user from room
